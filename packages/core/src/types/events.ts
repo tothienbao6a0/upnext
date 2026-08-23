@@ -58,4 +58,9 @@ export interface RuntimeEvents {
     action: 'adopted' | 'corrected' | 'ignored';
   };
   'adapter:error': { adapterId: string; error: SerializedError };
+  /**
+   * Something failed in work the runtime started on its own behalf, with no
+   * caller to return the error to — advancing after a track ended, say.
+   */
+  'error': { error: SerializedError; while: string };
 }

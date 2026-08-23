@@ -1,5 +1,5 @@
 import type { Binder } from './binder.js';
-import { ErrorCodes } from './errors.js';
+import { ErrorCodes, toSerializedError } from './errors.js';
 import { isPlayable } from './identity.js';
 import type { Queue } from './queue.js';
 import type { IntentContext, QueueItem, SerializedError } from './types/index.js';
@@ -95,6 +95,11 @@ export class Prefetcher {
         ref: { ...item.ref, ...outcome.binding.ref },
       });
       this.deps.onChanged();
+    } catch (err) {
+      // Nothing awaits preparation, so an escaping rejection would be unhandled
+      // and could take the host process down. A host resolver that throws is
+      // just another reason this entry is doubtful.
+      this.#warn(id, toSerializedError(err));
     } finally {
       this.#inFlight.delete(id);
     }
