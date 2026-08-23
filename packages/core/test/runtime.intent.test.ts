@@ -94,6 +94,48 @@ test('without a resolver, intents fall back to adapter search', async () => {
   assert.equal(runtime.nowPlaying()?.ref.uri, 'fake:nights');
 });
 
+test('an entry that cannot be prepared is flagged before the playhead arrives', async () => {
+  const runtime = new Runtime({
+    adapters: [new FakeAdapter({ capabilities: EVENT_CAPS })],
+    scheduler: new ManualScheduler(),
+    lookahead: 2,
+    resolveIntent: async () => null,
+  });
+  const warnings = collect(runtime, 'item:unresolvable');
+
+  const item = runtime.enqueue('nothing will match this');
+  await flush();
+
+  assert.equal(warnings.length, 1, 'the host should not have to wait for playback to find out');
+  assert.equal(warnings[0]!.error.code, 'intent_unresolved');
+  assert.equal(
+    runtime.queue.get(item.id)?.status,
+    'pending',
+    'a lookahead failure is advisory, not a verdict',
+  );
+});
+
+test('a flagged entry is still retried in full when it comes up', async () => {
+  let resolvable = false;
+  const runtime = new Runtime({
+    adapters: [new FakeAdapter({ capabilities: EVENT_CAPS })],
+    scheduler: new ManualScheduler(),
+    lookahead: 2,
+    resolveIntent: async () => (resolvable ? { title: 'found it' } : null),
+  });
+  const warnings = collect(runtime, 'item:unresolvable');
+
+  runtime.enqueue('flaky');
+  await flush();
+  assert.equal(warnings.length, 1);
+
+  resolvable = true;
+  await runtime.play();
+
+  assert.equal(runtime.nowPlaying()?.ref.title, 'found it');
+  assert.equal(runtime.nowPlaying()?.error, undefined, 'the warning is cleared on success');
+});
+
 test('an unresolvable intent fails that entry and moves on', async () => {
   const runtime = new Runtime({
     adapters: [new FakeAdapter({ capabilities: EVENT_CAPS })],
