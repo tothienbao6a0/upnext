@@ -1,0 +1,15 @@
+{
+  "name": "@aq/core",
+  "version": "0.0.1",
+  "description": "Source-agnostic media queue and playback runtime. Zero dependencies, no I/O.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": "./dist/src/index.js",
+    "./testing": "./dist/src/testing.js"
+  },
+  "files": ["dist/src"],
+  "sideEffects": false
+}
