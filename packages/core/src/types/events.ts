@@ -38,6 +38,16 @@ export interface RuntimeEvents {
   'playback:changed': PlaybackState;
   'position': { itemId: string; positionMs: number; durationMs: number | null };
   'item:resolved': { item: QueueItem };
+  /**
+   * Preparation failed ahead of time — this entry probably will not play.
+   *
+   * A warning, not a verdict: the entry keeps its status and is retried in full
+   * when the playhead reaches it, since a failure during lookahead is often
+   * just a backend that was briefly unreachable. Emitted so a host can say so
+   * in the queue instead of letting the entry look fine until it silently does
+   * not play.
+   */
+  'item:unresolvable': { item: QueueItem; error: SerializedError };
   'item:started': { item: QueueItem };
   'item:ended': { item: QueueItem; reason: 'completed' | 'skipped' | 'replaced' };
   'item:failed': { item: QueueItem; error: SerializedError };
