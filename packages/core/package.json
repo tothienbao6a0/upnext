@@ -8,7 +8,8 @@
   "types": "./dist/src/index.d.ts",
   "exports": {
     ".": "./dist/src/index.js",
-    "./testing": "./dist/src/testing.js"
+    "./testing": "./dist/src/testing.js",
+    "./internal": "./dist/src/internal.js"
   },
   "files": ["dist/src"],
   "sideEffects": false
