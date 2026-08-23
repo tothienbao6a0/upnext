@@ -8,7 +8,7 @@
   "main": "./dist/src/cli.js",
   "dependencies": {
     "upnext-adapter-local": "0.0.1",
-    "upnext": "0.0.1"
+    "upnext-core": "0.0.1"
   },
   "repository": {
     "type": "git",

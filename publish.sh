@@ -6,15 +6,15 @@ cd "$(dirname "$0")"
 FAILED=()
 for p in core adapter-local adapter-process; do
   if npm publish -w "packages/$p" --otp="$OTP" >/tmp/pub-$p.log 2>&1; then
-    echo "PUBLISHED  @upnext/$p"
+    echo "PUBLISHED  @upnext-core/$p"
   else
-    echo "FAILED     @upnext/$p  -> $(grep -m1 'npm error' /tmp/pub-$p.log | head -c 100)"
+    echo "FAILED     @upnext-core/$p  -> $(grep -m1 'npm error' /tmp/pub-$p.log | head -c 100)"
     FAILED+=("$p")
   fi
 done
 echo "---"
 for p in core adapter-local adapter-process; do
-  code=$(curl -s -o /dev/null -w "%{http_code}" "https://registry.npmjs.org/@upnext%2f$p")
-  [ "$code" = "200" ] && echo "live: @upnext/$p" || echo "not live: @upnext/$p"
+  code=$(curl -s -o /dev/null -w "%{http_code}" "https://registry.npmjs.org/@upnext-core%2f$p")
+  [ "$code" = "200" ] && echo "live: @upnext-core/$p" || echo "not live: @upnext-core/$p"
 done
 [ ${#FAILED[@]} -eq 0 ] || exit 1

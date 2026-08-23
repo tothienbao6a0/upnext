@@ -1,5 +1,5 @@
 {
-  "name": "upnext",
+  "name": "upnext-core",
   "version": "0.0.1",
   "description": "Source-agnostic media queue and playback runtime. Zero dependencies, no I/O.",
   "license": "Apache-2.0",

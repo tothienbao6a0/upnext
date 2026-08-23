@@ -1,4 +1,4 @@
-# upnext
+# upnext-core
 
 **One queue and one playback API over every audio source, built to be embedded in agent harnesses.**
 
@@ -7,7 +7,7 @@ agent — or a UI, or a script — can control audio without knowing whether the
 sound is coming from Spotify, a browser tab, a podcast feed, or a file on disk.
 
 ```ts
-import { Runtime } from 'upnext';
+import { Runtime } from 'upnext-core';
 import { LocalAdapter } from 'upnext-adapter-local';
 
 const runtime = new Runtime({ adapters: [new LocalAdapter()] });
@@ -239,14 +239,14 @@ TypeScript, and the adapter ecosystem is the entire point.
 
 | package | what it is |
 | --- | --- |
-| `upnext` | queue, state machine, capabilities, events. **Zero dependencies, no I/O.** |
-| `upnext/testing` | a fake adapter whose capabilities you set, for testing your host. |
-| `upnext/internal` | the pieces the runtime is built from. Unsupported, and they will move. |
+| `upnext-core` | queue, state machine, capabilities, events. **Zero dependencies, no I/O.** |
+| `upnext-core/testing` | a fake adapter whose capabilities you set, for testing your host. |
+| `upnext-core/internal` | the pieces the runtime is built from. Unsupported, and they will move. |
 | `upnext-adapter-local` | files and streams via `ffplay`/`afplay`. No credentials, no accounts. |
 | `upnext-adapter-process` | run an adapter as a subprocess in any language. |
 | `upnext-demo` | the whole thing end to end, out loud. |
 
-`upnext` does no I/O at all: it is a pure state machine with an injectable
+`upnext-core` does no I/O at all: it is a pure state machine with an injectable
 clock, so it runs identically in Node, Bun, Deno, Electron, Tauri or a browser,
 and the entire test suite executes in milliseconds with no fake-timer library
 and no flakes.

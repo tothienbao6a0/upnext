@@ -1,4 +1,4 @@
-# upnext
+# upnext-core
 
 **One queue and one playback API over every audio source, built to be embedded in agent harnesses.**
 
@@ -7,11 +7,11 @@ agent — or a UI, or a script — can control audio without knowing whether the
 sound is coming from Spotify, a browser tab, a podcast feed, or a file on disk.
 
 ```bash
-npm i upnext upnext-adapter-local
+npm i upnext-core upnext-adapter-local
 ```
 
 ```ts
-import { Runtime } from 'upnext';
+import { Runtime } from 'upnext-core';
 import { LocalAdapter } from 'upnext-adapter-local';
 
 const runtime = new Runtime({ adapters: [new LocalAdapter()] });
@@ -49,9 +49,9 @@ was not handed. It runs identically in Node, Bun, Deno, Electron, Tauri or a
 browser, and the entire test suite executes in milliseconds with no fake-timer
 library.
 
-- `upnext` — the runtime and the protocol
-- `upnext/testing` — a fake adapter whose capabilities you set
-- `upnext/internal` — the pieces it is built from. Unsupported; they move.
+- `upnext-core` — the runtime and the protocol
+- `upnext-core/testing` — a fake adapter whose capabilities you set
+- `upnext-core/internal` — the pieces it is built from. Unsupported; they move.
 
 ## Adapters
 

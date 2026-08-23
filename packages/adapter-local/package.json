@@ -14,7 +14,7 @@
     "src"
   ],
   "dependencies": {
-    "upnext": "0.0.1"
+    "upnext-core": "0.0.1"
   },
   "repository": {
     "type": "git",

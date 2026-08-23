@@ -4,7 +4,7 @@
  * Deliberately small. Everything here is something a host, an agent or an
  * adapter author needs; the collaborators the runtime is built from are not
  * exported, because a library whose value is a stable contract cannot afford to
- * have its internals depended on. They are available from `upnext/internal`
+ * have its internals depended on. They are available from `upnext-core/internal`
  * for anyone who accepts that they will move.
  */
 

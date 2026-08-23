@@ -41,4 +41,4 @@ body:
     id: versions
     attributes:
       label: Versions
-      placeholder: "upnext 0.0.1, Node 22.19, macOS 15"
+      placeholder: "upnext-core 0.0.1, Node 22.19, macOS 15"

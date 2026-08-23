@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { after, before, test } from 'node:test';
-import { Runtime } from 'upnext';
+import { Runtime } from 'upnext-core';
 import { ProcessAdapter } from '../src/index.js';
 
 /**
