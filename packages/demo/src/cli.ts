@@ -1,9 +1,9 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Runtime } from '@upnext/core';
-import type { MediaRef } from '@upnext/core';
-import { LocalAdapter } from '@upnext/adapter-local';
+import { Runtime } from 'upnext';
+import type { MediaRef } from 'upnext';
+import { LocalAdapter } from 'upnext-adapter-local';
 import { writeTone } from './tones.js';
 
 /**

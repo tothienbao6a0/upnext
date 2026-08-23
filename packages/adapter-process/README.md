@@ -1,15 +1,15 @@
-# @upnext/adapter-process
+# upnext-adapter-process
 
-Run an [`@upnext/core`](https://www.npmjs.com/package/@upnext/core) adapter as a
+Run an [`upnext`](https://www.npmjs.com/package/upnext) adapter as a
 subprocess, so a backend can be written in any language.
 
 ```bash
-npm i @upnext/core @upnext/adapter-process
+npm i upnext upnext-adapter-process
 ```
 
 ```ts
-import { Runtime } from '@upnext/core';
-import { ProcessAdapter } from '@upnext/adapter-process';
+import { Runtime } from 'upnext';
+import { ProcessAdapter } from 'upnext-adapter-process';
 
 const runtime = new Runtime({
   adapters: [

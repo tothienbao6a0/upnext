@@ -1,4 +1,4 @@
-import type { AdapterEvent, Capabilities } from '@upnext/core';
+import type { AdapterEvent, Capabilities } from 'upnext';
 
 /**
  * The out-of-process form of the adapter contract.

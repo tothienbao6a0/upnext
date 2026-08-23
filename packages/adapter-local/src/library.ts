@@ -1,7 +1,7 @@
 import { readdir } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { MediaRef } from '@upnext/core';
+import type { MediaRef } from 'upnext';
 
 export const AUDIO_EXTENSIONS = new Set([
   '.mp3',

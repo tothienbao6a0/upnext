@@ -32,7 +32,7 @@ export interface AdapterState {
  * thirty-line adapter is a legitimate adapter.
  *
  * Adapters do not have to be written in TypeScript, or even run in this
- * process — see `@upnext/adapter-process` for the out-of-process form of this exact
+ * process — see `upnext-adapter-process` for the out-of-process form of this exact
  * contract.
  */
 export interface Adapter {

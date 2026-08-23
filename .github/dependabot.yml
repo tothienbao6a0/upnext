@@ -1,7 +1,7 @@
 version: 2
 updates:
   # The workflow actions are the only third-party code that runs with any
-  # privilege here, so they are the thing worth keeping current. `@upnext/core`
+  # privilege here, so they are the thing worth keeping current. `upnext`
   # itself has no dependencies to update.
   - package-ecosystem: github-actions
     directory: /
