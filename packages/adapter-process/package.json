@@ -1,0 +1,14 @@
+{
+  "name": "@aq/adapter-process",
+  "version": "0.0.1",
+  "description": "Run an adapter as a subprocess speaking newline-delimited JSON, so backends can be written in any language.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": { ".": "./dist/src/index.js" },
+  "files": ["dist/src"],
+  "dependencies": {
+    "@aq/core": "0.0.1"
+  }
+}
