@@ -85,6 +85,19 @@ agent can tell which end it is talking to:
 `play: true` would be useless — every adapter can play. These are the flags that
 change what the runtime and the agent actually do.
 
+They are published where they are needed rather than where they came from:
+`getPlayback().capabilities` is the live backend's, inline, so answering "can I
+seek right now?" is never a join against `adapterId`. There is a one-liner for
+the common case:
+
+```ts
+if (runtime.can('seek')) await runtime.seek(30_000);
+```
+
+Calling a verb a backend does not support throws rather than silently doing
+nothing — an agent that asked to seek needs to know the playhead did not move.
+Asking for a state already reached (pausing what is not playing) is a no-op.
+
 When a human *does* take over an external player, the default policy is that the
 human wins: their choice is folded into the queue and playback carries on from
 there. An agent-owned queue that fights the person holding the keyboard is a
@@ -105,9 +118,16 @@ runtime.next()         runtime.previous()
 runtime.seek(ms)       runtime.setVolume(0..1)      runtime.stop()
 
 runtime.search(query, { limit, adapterId })
-runtime.getState()     // { version, playback, nowPlaying, queue, adapters }
+runtime.can(capability)        // what the loaded backend supports, right now
+runtime.getState()             // { version, playback, nowPlaying, queue, adapters }
+runtime.queue                  // read-only view: list, get, upcoming, nextPlayable…
 runtime.on('item:started' | 'queue:changed' | 'desync' | ..., handler)
 ```
+
+Everything handed out is a copy, including event payloads, and `runtime.queue`
+is a frozen view with no mutators on it — not a type-level `Readonly` that a
+cast could defeat. Mutation only goes through the methods above, which are the
+only paths that announce the change, re-run lookahead and keep the deck in step.
 
 **Position is always addressed by id, never by index.** `move(item, 2)` is a
 race the moment an agent and a human touch the queue at the same time — by the
@@ -137,6 +157,20 @@ The core never calls a model, never holds an API key, never picks a provider.
 That boundary is what makes this embeddable in someone else's harness instead
 of being one agent with a `package.json`. Without a resolver it falls back to
 searching whatever adapters advertise `search`.
+
+If an entry cannot be prepared ahead of time you hear about it then, via
+`item:unresolvable`, rather than discovering it when the playhead arrives and
+nothing comes out of the speakers. It is a warning, not a verdict: the entry
+keeps its place and is retried in full when it comes up, because a backend that
+was briefly unreachable during lookahead is usually fine a minute later.
+
+### Events are per logical change, not per write
+
+Starting a track touches the queue five times internally. Subscribers get one
+`queue:changed` carrying the settled state, because a host rendering a list
+should not repaint five times for what a person would call one change. Reads
+are never deferred — only the telling is, so an agent that enqueues and
+immediately calls `getState()` always sees its own write.
 
 ## Writing an adapter
 
@@ -181,6 +215,8 @@ TypeScript, and the adapter ecosystem is the entire point.
 | package | what it is |
 | --- | --- |
 | `@aq/core` | queue, state machine, capabilities, events. **Zero dependencies, no I/O.** |
+| `@aq/core/testing` | a fake adapter whose capabilities you set, for testing your host. |
+| `@aq/core/internal` | the pieces the runtime is built from. Unsupported, and they will move. |
 | `@aq/adapter-local` | files and streams via `ffplay`/`afplay`. No credentials, no accounts. |
 | `@aq/adapter-process` | run an adapter as a subprocess in any language. |
 | `@aq/demo` | the whole thing end to end, out loud. |
@@ -194,7 +230,7 @@ and no flakes.
 
 ```bash
 npm install
-npm test        # 69 tests
+npm test        # 84 tests
 npm run demo    # makes actual sound — no assets, no downloads
 ```
 
@@ -203,9 +239,10 @@ The demo generates its own tones, so it works on any machine with `ffplay` or
 
 ## Status
 
-Early. The core, the capability model and the adapter contract are real and
-tested; three bugs in this README's design were found by running the demo out
-loud rather than by reading the code, and each has a regression test.
+Early, but the core, the capability model and the adapter contract are real and
+tested. Three bugs in this design were found by running the demo out loud rather
+than by reading the code, and each has a regression test — that is worth keeping
+as a habit as adapters are added.
 
 Deliberately **not** built yet:
 
