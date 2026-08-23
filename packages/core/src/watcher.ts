@@ -44,6 +44,7 @@ export class Watcher {
   #pollTimer: unknown = null;
   #tickTimer: unknown = null;
   #stopped = false;
+  #warnedNoDuration = false;
 
   constructor(
     adapter: Adapter,
@@ -148,7 +149,22 @@ export class Watcher {
     this.#clearEndTimer();
     if (this.#stopped) return;
     if (this.adapter.capabilities.endOfTrack !== 'none') return;
-    if (!this.#durationMs) return;
+    if (!this.#durationMs) {
+      // A backend that cannot announce the end of a track and does not know how
+      // long it is leaves nothing to advance on, so the queue would simply stop
+      // here. Say so once, rather than looking like playback hung.
+      if (!this.#warnedNoDuration) {
+        this.#warnedNoDuration = true;
+        this.#handlers.onError({
+          code: 'no_duration',
+          message:
+            `${this.adapter.id} cannot report end-of-track and gave no duration for ` +
+            `${this.binding.nativeUri}, so the queue will not advance on its own`,
+          adapterId: this.adapter.id,
+        });
+      }
+      return;
+    }
 
     const remaining = Math.max(0, this.#durationMs - this.#position.value);
     this.#endTimer = this.#opts.scheduler.setTimeout(() => {
