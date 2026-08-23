@@ -20,6 +20,12 @@ export interface RuntimeOptions {
   pollIntervalMs?: number;
   /** How often to emit position updates for extrapolated backends. */
   positionIntervalMs?: number;
+  /**
+   * How long any single call out of the library — an adapter method, or the
+   * host's intent resolver — may take before it counts as failed. `null` waits
+   * forever, which risks the queue stopping with no error and nothing playing.
+   */
+  timeoutMs?: number | null;
   scheduler?: Scheduler;
 }
 
@@ -30,6 +36,7 @@ export interface ResolvedOptions {
   autoAdvance: boolean;
   pollIntervalMs: number;
   positionIntervalMs: number;
+  timeoutMs: number | null;
   scheduler: Scheduler;
   resolveIntent: IntentResolver | undefined;
 }
@@ -42,6 +49,7 @@ export function resolveOptions(options: RuntimeOptions): ResolvedOptions {
     autoAdvance: options.autoAdvance ?? true,
     pollIntervalMs: options.pollIntervalMs ?? 1000,
     positionIntervalMs: options.positionIntervalMs ?? 1000,
+    timeoutMs: options.timeoutMs === undefined ? 30_000 : options.timeoutMs,
     scheduler: options.scheduler ?? systemScheduler,
     resolveIntent: options.resolveIntent,
   };

@@ -41,4 +41,5 @@ export const ErrorCodes = {
   NotFound: 'not_found',
   VersionConflict: 'version_conflict',
   AdapterFailed: 'adapter_failed',
+  Timeout: 'timeout',
 } as const;
