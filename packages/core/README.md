@@ -1,10 +1,45 @@
 # upnext-core
 
-**One queue and one playback API over every audio source, built to be embedded in agent harnesses.**
+[![npm](https://img.shields.io/npm/v/upnext-core)](https://www.npmjs.com/package/upnext-core)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/tothienbao6a0/upnext/blob/main/LICENSE)
+[![deps](https://img.shields.io/badge/dependencies-0-brightgreen)](https://www.npmjs.com/package/upnext-core)
 
-Not a music player. Not an MCP server. A library your product imports so that an
-agent — or a UI, or a script — can control audio without knowing whether the
-sound is coming from Spotify, a browser tab, a podcast feed, or a file on disk.
+**One queue and one playback API over every audio source — built to be embedded in agent harnesses.**
+
+```ts
+runtime.enqueue({ title: 'Bad Habit', artist: 'Steve Lacy' });  // → Spotify
+runtime.enqueue('https://example.com/interview.mp3');           // → a stream
+runtime.enqueue('file:///voice-memos/ruby.m4a');                // → local disk
+runtime.enqueue('something calmer after those');                // → your agent decides, later
+
+await runtime.play();
+```
+
+Four sources. One queue. The agent never learns which is which.
+
+## The idea
+
+Every audio integration today puts the queue in the wrong place.
+
+```
+   WITHOUT                                 WITH upnext
+
+   agent ──► Spotify API              agent ──► ┌───────────┐
+                 │                              │ THE QUEUE │ ← yours
+                 ▼                              └─────┬─────┘
+           ┌───────────────┐               ┌──────┬───┴───┬───────┐
+           │ Spotify queue │ ← the real    ▼      ▼       ▼       ▼
+           └───────────────┘      one   Spotify Apple  browser  local
+
+   Queue a YouTube video next.            Each just plays what it's handed.
+   Nowhere to put it.
+```
+
+**The runtime owns the queue. Adapters are execution backends.** Spotify's queue,
+Apple Music's Up Next and a browser tab's `<audio>` element all become places to
+send one item at a time.
+
+## Install
 
 ```bash
 npm i upnext-core upnext-adapter-local
@@ -16,42 +51,71 @@ import { LocalAdapter } from 'upnext-adapter-local';
 
 const runtime = new Runtime({ adapters: [new LocalAdapter()] });
 
-runtime.enqueue({ title: 'Bad Habit', artist: 'Steve Lacy' });
-runtime.enqueue('https://example.com/interview.mp3');
-runtime.enqueue('something calmer after this');   // resolved later, by your host
+runtime.on('item:started', ({ item }) => console.log('▶', item.ref.title));
 
+runtime.enqueue('file:///path/to/song.mp3');
 await runtime.play();
 ```
 
-## The idea
+## Two ideas that make it work
 
-**The runtime owns the queue. Adapters are execution backends.**
+### Media is described, not located
 
-Every existing integration inverts this — an agent calls the Spotify API, and
-*Spotify's* queue is the real one. That works right up until the next item is a
-YouTube video, and then there is nowhere to put it. Here, Spotify's queue, Apple
-Music's Up Next and a browser tab's media element are all just places to send
-one item at a time.
+A queue entry is not a URI. It's a `MediaRef` that binds to a source **as late as
+possible** — so you can enqueue before choosing a source, fall back automatically
+when one fails mid-queue, and share a queue between people on different services.
 
-**Entries are descriptions, not URIs.** A `MediaRef` binds to a source as late
-as possible, so an agent can enqueue something before knowing which backend will
-play it, and the runtime can fall back to another source when one fails.
+```ts
+{ title: 'Bad Habit', artist: 'Steve Lacy', isrc: 'USUM72209293' }
+```
 
-**Capabilities say what a backend really is** — whether it pushes end-of-track
-events or must be polled, whether its position is real or extrapolated, whether
-a human can change it behind your back. They are published inline on playback
-state, so `runtime.can('seek')` is one call rather than a join.
+Resolutions are verified before they play. An adapter returning *something* isn't
+the same as it returning the right thing.
 
-## This package
+### Capabilities say what a backend actually is
 
-Zero dependencies and no I/O at all — no filesystem, no network, no clock it
-was not handed. It runs identically in Node, Bun, Deno, Electron, Tauri or a
-browser, and the entire test suite executes in milliseconds with no fake-timer
-library.
+```
+  you own it completely  ◄─────────────────────────────►  someone else owns it
 
-- `upnext-core` — the runtime and the protocol
-- `upnext-core/testing` — a fake adapter whose capabilities you set
-- `upnext-core/internal` — the pieces it is built from. Unsupported; they move.
+  local file                browser tab            Spotify desktop app
+  process exit = done       'ended' event          must be polled
+  nobody else touches it                           A HUMAN CAN HIT NEXT
+```
+
+```ts
+if (runtime.can('seek')) await runtime.seek(30_000);
+```
+
+Capabilities are published inline on playback state, so that's one call rather
+than a join against `adapterId`. `play: true` would be useless — every adapter
+can play. `endOfTrack`, `position` and `externalControl` are the flags that
+change what the runtime and the agent actually do.
+
+When a human *does* take over an external player, the default is that **the human
+wins** — their choice folds into the queue and playback carries on.
+
+## Intents are queue entries
+
+```ts
+runtime.enqueue('something calmer after this');
+
+new Runtime({
+  resolveIntent: async (intent, ctx) => yourModel.pickTrack(intent, ctx),
+});
+```
+
+The entry stays unresolved until the playhead nears it, then calls the resolver
+**your host supplies**. The core never calls a model, never holds an API key,
+never picks a provider — that boundary is what makes this embeddable in someone
+else's harness.
+
+## Entry points
+
+| import | what it is |
+|---|---|
+| `upnext-core` | the runtime and the protocol |
+| `upnext-core/testing` | a fake adapter whose capabilities you set |
+| `upnext-core/internal` | the pieces it's built from. Unsupported; they move. |
 
 ## Adapters
 
@@ -61,9 +125,16 @@ library.
 Writing one is small: `id`, `capabilities`, `match`, `resolve`, `load`, `play`,
 `stop`. Everything else is optional and gated by what you declare.
 
+## About this package
+
+**Zero dependencies and no I/O at all** — no filesystem, no network, no clock it
+wasn't handed. It runs identically in Node, Bun, Deno, Electron, Tauri or a
+browser, and its whole test suite executes in milliseconds with no fake-timer
+library.
+
 ---
 
-Full documentation, design notes and contribution guide:
+Diagrams, API reference, failure semantics and the adapter guide:
 **https://github.com/tothienbao6a0/upnext**
 
 Apache-2.0
