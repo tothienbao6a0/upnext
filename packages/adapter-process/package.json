@@ -10,7 +10,9 @@
     ".": "./dist/src/index.js"
   },
   "files": [
-    "dist/src"
+    "dist/src",
+    "src",
+    "examples"
   ],
   "dependencies": {
     "@upnext/core": "0.0.1"
