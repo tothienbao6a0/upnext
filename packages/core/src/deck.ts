@@ -6,6 +6,7 @@ import type {
   Adapter,
   AdapterEvent,
   Binding,
+  Capabilities,
   MediaRef,
   PlaybackState,
   PlaybackStatus,
@@ -79,7 +80,7 @@ export class Deck {
       adapterId: adapter.id,
       positionMs: 0,
       durationMs: binding.ref.durationMs ?? null,
-      positionSource: adapter.capabilities.position,
+      capabilities: adapter.capabilities,
     });
   }
 
@@ -117,9 +118,20 @@ export class Deck {
 
   // -- transport ------------------------------------------------------------
 
+  /**
+   * Transport failure policy, applied consistently across all four verbs.
+   *
+   * Asking for a state the deck is already in — pausing what is not playing,
+   * resuming what is not paused — is a no-op, because those verbs describe a
+   * destination and it has already been reached.
+   *
+   * Asking for something that cannot happen throws: seeking with nothing
+   * loaded, or any verb the backend does not support. Silently resolving there
+   * would tell an agent its seek landed when the playhead never moved.
+   */
   async pause(): Promise<void> {
+    if (!this.#watcher || this.#playback.status !== 'playing') return;
     const watcher = this.#require('pause');
-    if (this.#playback.status !== 'playing') return;
     await watcher.adapter.pause!();
     watcher.pause();
     this.patch({ status: 'paused', positionMs: watcher.positionMs });
@@ -150,10 +162,12 @@ export class Deck {
     this.patch({ volume: clamped });
   }
 
-  /**
-   * A backend that cannot do something says so rather than failing silently or
-   * faking it — an agent that asked to seek needs to know it did not happen.
-   */
+  /** Whether the loaded backend can do something, without attempting it. */
+  can(capability: keyof Capabilities): boolean {
+    const caps = this.#playback.capabilities;
+    return caps ? Boolean(caps[capability]) : false;
+  }
+
   #require(capability: 'pause' | 'seek' | 'volume'): Watcher {
     const watcher = this.#watcher;
     if (!watcher) throw new AQError(ErrorCodes.NotFound, 'nothing is loaded');

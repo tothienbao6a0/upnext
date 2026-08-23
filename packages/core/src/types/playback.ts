@@ -9,8 +9,18 @@ export interface PlaybackState {
   adapterId: string | null;
   positionMs: number;
   durationMs: number | null;
-  /** How much to trust `positionMs`. Mirrors the active adapter's capability. */
-  positionSource: Capabilities['position'];
+  /**
+   * What the backend currently playing can actually do, inline.
+   *
+   * The whole point of the capability model is that an agent knows before it
+   * calls. Publishing capabilities only as a separate per-adapter list would
+   * make "can I seek right now?" a join against `adapterId` on every single
+   * decision, which is exactly the friction this library exists to remove.
+   *
+   * `null` when nothing is loaded. `capabilities.position` is also how much to
+   * trust `positionMs`.
+   */
+  capabilities: Capabilities | null;
   volume: number | null;
 }
 
@@ -20,6 +30,6 @@ export const idlePlayback: PlaybackState = {
   adapterId: null,
   positionMs: 0,
   durationMs: null,
-  positionSource: 'none',
+  capabilities: null,
   volume: null,
 };
