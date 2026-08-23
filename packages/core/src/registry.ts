@@ -1,4 +1,5 @@
 import { AQError, ErrorCodes, toSerializedError } from './errors.js';
+import { validateAdapter } from './validate.js';
 import type { Adapter, AdapterEvent, SerializedError } from './types/index.js';
 
 export interface RegistryHandlers {
@@ -16,6 +17,7 @@ export interface RegistryHandlers {
 export class AdapterRegistry {
   #adapters = new Map<string, Adapter>();
   #unsubscribes = new Map<string, () => void>();
+  #failures = new Map<string, SerializedError>();
   #handlers: RegistryHandlers;
 
   constructor(handlers: RegistryHandlers) {
@@ -26,6 +28,7 @@ export class AdapterRegistry {
     if (this.#adapters.has(adapter.id)) {
       throw new AQError(ErrorCodes.AdapterFailed, `adapter ${adapter.id} already registered`);
     }
+    validateAdapter(adapter);
     this.#adapters.set(adapter.id, adapter);
 
     if (adapter.subscribe) {
@@ -36,10 +39,26 @@ export class AdapterRegistry {
     }
 
     // A backend that cannot start up is reported, not thrown: the rest of the
-    // queue should keep working when one source is unavailable.
+    // queue should keep working when one source is unavailable. It is also
+    // taken out of the running, because an adapter whose `init` failed will
+    // usually accept a `resolve` and then fail every single playback.
     void adapter.init?.().catch((err: unknown) => {
+      this.#failures.set(adapter.id, toSerializedError(err, adapter.id));
       this.#handlers.onError(adapter.id, toSerializedError(err, adapter.id));
     });
+  }
+
+  /** Why an adapter is out of the running, if it is. */
+  failure(id: string): SerializedError | undefined {
+    return this.#failures.get(id);
+  }
+
+  /**
+   * Adapters eligible to be chosen. Registered but failed to start is not the
+   * same as absent: the host still wants to see it in a snapshot and say so.
+   */
+  available(): Adapter[] {
+    return this.list().filter((adapter) => !this.#failures.has(adapter.id));
   }
 
   async remove(id: string): Promise<Adapter | undefined> {
@@ -48,6 +67,7 @@ export class AdapterRegistry {
     this.#unsubscribes.get(id)?.();
     this.#unsubscribes.delete(id);
     this.#adapters.delete(id);
+    this.#failures.delete(id);
     await adapter.dispose?.();
     return adapter;
   }
