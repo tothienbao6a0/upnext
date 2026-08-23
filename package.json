@@ -1,0 +1,23 @@
+{
+  "name": "aq-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Source-agnostic media queue + playback runtime for agents (placeholder name: aq)",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "test": "npm run build && node --test \"packages/*/dist/test/**/*.test.js\"",
+    "demo": "npm run build && node packages/demo/dist/src/cli.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}
