@@ -1,7 +1,14 @@
 import type { Binder } from './binder.js';
+import { ErrorCodes } from './errors.js';
 import { isPlayable } from './identity.js';
 import type { Queue } from './queue.js';
-import type { IntentContext, QueueItem } from './types/index.js';
+import type { IntentContext, QueueItem, SerializedError } from './types/index.js';
+
+/** A bind abandoned mid-flight, which says nothing about the entry itself. */
+const CANCELLED: SerializedError = {
+  code: 'cancelled',
+  message: 'preparation was superseded',
+};
 
 
 export interface PrefetcherDeps {
@@ -11,6 +18,8 @@ export interface PrefetcherDeps {
   lookahead: number;
   intentContext(item: QueueItem): IntentContext;
   onResolved(item: QueueItem): void;
+  /** Preparation failed. Advisory — the entry is still retried at play time. */
+  onUnresolvable(item: QueueItem, error: SerializedError): void;
   onChanged(): void;
 }
 
@@ -29,8 +38,12 @@ export class Prefetcher {
 
   /** Look ahead from the cursor and prepare anything not ready yet. */
   pump(): void {
-    const { queue, lookahead } = this.deps;
+    const { queue, binder, lookahead } = this.deps;
     if (lookahead <= 0) return;
+    // With no backends registered there is nothing to prepare against, and
+    // flagging every entry as unresolvable would only be reporting that the
+    // host has not finished wiring up yet. Adding an adapter pumps again.
+    if (binder.adapterCount === 0) return;
 
     let cursor = queue.cursorId;
     for (let i = 0; i < lookahead; i++) {
@@ -55,7 +68,13 @@ export class Prefetcher {
 
       if (item.intent && !isPlayable(item.ref)) {
         const ref = await binder.intent(item.intent, this.deps.intentContext(item));
-        if (!ref || !this.#preparable(id)) return;
+        if (!this.#preparable(id)) return;
+        if (!ref) {
+          return this.#warn(id, {
+            code: ErrorCodes.IntentUnresolved,
+            message: `nothing resolved for intent: ${item.intent}`,
+          });
+        }
         queue.update(id, { ref, status: 'unresolved' });
         item = queue.require(id);
         this.deps.onResolved(item);
@@ -65,7 +84,10 @@ export class Prefetcher {
       if (item.binding) return;
 
       const outcome = await binder.bind(item.ref, { attempted: item.attempted ?? [] });
-      if (!outcome.ok || !this.#preparable(id)) return;
+      if (!this.#preparable(id)) return;
+      if (!outcome.ok) {
+        return this.#warn(id, 'cancelled' in outcome ? CANCELLED : outcome.error);
+      }
 
       queue.update(id, {
         binding: outcome.binding,
@@ -76,6 +98,22 @@ export class Prefetcher {
     } finally {
       this.#inFlight.delete(id);
     }
+  }
+
+  /**
+   * Record an advisory failure without condemning the entry.
+   *
+   * The status is left alone deliberately: a backend that was unreachable
+   * during lookahead is often fine thirty seconds later, and `#start` clears
+   * the error and retries every adapter from scratch. What this buys is that a
+   * host can mark the entry as doubtful now rather than discovering it when the
+   * playhead arrives and nothing comes out of the speakers.
+   */
+  #warn(id: string, error: SerializedError): void {
+    if (!this.deps.queue.get(id)) return;
+    this.deps.queue.update(id, { error });
+    this.deps.onUnresolvable(this.deps.queue.require(id), error);
+    this.deps.onChanged();
   }
 
   /**

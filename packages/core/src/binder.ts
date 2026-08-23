@@ -47,6 +47,11 @@ export type BindOutcome =
 export class Binder {
   constructor(private readonly deps: BinderDeps) {}
 
+  /** How many backends exist at all, regardless of what they claim. */
+  get adapterCount(): number {
+    return this.deps.adapters().length;
+  }
+
   /** Resolve natural language into something concrete. */
   async intent(text: string, ctx: IntentContext): Promise<MediaRef | null> {
     const resolve = this.deps.resolveIntent;
