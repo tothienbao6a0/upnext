@@ -67,7 +67,7 @@ test('advances on poll when the backend can only be asked', async () => {
   scheduler.advance(500);
   await flush();
   assert.equal(runtime.getPlayback().positionMs, 1000);
-  assert.equal(runtime.getPlayback().positionSource, 'authoritative');
+  assert.equal(runtime.getPlayback().capabilities?.position, 'authoritative');
 
   adapter.setPosition(3000);
   scheduler.advance(500);
@@ -82,7 +82,7 @@ test('estimated position ticks forward without help from the backend', async () 
   scheduler.advance(3000);
 
   assert.equal(runtime.getPlayback().positionMs, 3000);
-  assert.equal(runtime.getPlayback().positionSource, 'estimated');
+  assert.equal(runtime.getPlayback().capabilities?.position, 'estimated');
 });
 
 test('pausing stops the estimated clock', async () => {

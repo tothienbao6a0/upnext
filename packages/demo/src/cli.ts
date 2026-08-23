@@ -87,10 +87,10 @@ async function main(): Promise<void> {
 }
 
 function describe(runtime: Runtime): string {
-  const { status, positionMs, durationMs, positionSource } = runtime.getPlayback();
+  const { status, positionMs, durationMs, capabilities } = runtime.getPlayback();
   const now = runtime.nowPlaying();
   const clock = `${(positionMs / 1000).toFixed(1)}s${durationMs ? `/${(durationMs / 1000).toFixed(1)}s` : ''}`;
-  return `${status}  ${now?.ref.title ?? dim('nothing')}  ${clock} ${dim(`(${positionSource})`)}`;
+  return `${status}  ${now?.ref.title ?? dim('nothing')}  ${clock} ${dim(`(${capabilities?.position ?? "unknown"})`)}`;
 }
 
 function waitForIdle(runtime: Runtime): Promise<void> {
