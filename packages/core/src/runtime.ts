@@ -7,7 +7,7 @@ import { isPlayable } from './identity.js';
 import { createItem, type EnqueueInput } from './input.js';
 import { resolveOptions, type ResolvedOptions, type RuntimeOptions } from './options.js';
 import { Prefetcher } from './prefetcher.js';
-import { Queue } from './queue.js';
+import { Queue, createQueueView, type ReadonlyQueue } from './queue.js';
 import { AdapterRegistry } from './registry.js';
 import { planReconciliation } from './reconciler.js';
 import type {
@@ -54,7 +54,8 @@ export interface RuntimeSnapshot {
  * `reconciler`. What is left is orchestration and the surface an agent talks to.
  */
 export class Runtime {
-  readonly queue = new Queue();
+  #queue = new Queue();
+  #queueView: ReadonlyQueue;
 
   #emitter = new Emitter<RuntimeEvents>();
   #nextId = createIdFactory('q');
@@ -72,10 +73,17 @@ export class Runtime {
   #generation = 0;
   /** The last entry that actually reached playback, for intent context. */
   #lastStartedId: string | null = null;
+  /** The queue moved and subscribers have not been told yet. */
+  #queueDirty = false;
+  /** A flush is already queued for this turn. */
+  #flushScheduled = false;
+  /** Depth of in-flight multi-step operations holding the announcement. */
+  #batchDepth = 0;
   #disposed = false;
 
   constructor(options: RuntimeOptions = {}) {
     this.#opts = resolveOptions(options);
+    this.#queueView = createQueueView(this.#queue);
 
     this.#registry = new AdapterRegistry({
       onEvent: (adapter, event) => this.#onAdapterEvent(adapter, event),
@@ -111,11 +119,12 @@ export class Runtime {
     });
 
     this.#prefetcher = new Prefetcher({
-      queue: this.queue,
+      queue: this.#queue,
       binder: this.#binder,
       lookahead: this.#opts.lookahead,
       intentContext: (item) => this.#intentContext(item),
       onResolved: (item) => this.#emitter.emit('item:resolved', { item }),
+      onUnresolvable: (item, error) => this.#emitter.emit('item:unresolvable', { item, error }),
       onChanged: () => this.#emitQueue(),
     });
 
@@ -142,6 +151,8 @@ export class Runtime {
 
   addAdapter(adapter: Adapter): void {
     this.#registry.add(adapter);
+    // Entries queued before there was anywhere to play them can be prepared now.
+    this.#prefetcher.pump();
   }
 
   async removeAdapter(id: string): Promise<void> {
@@ -155,18 +166,39 @@ export class Runtime {
 
   // -- reading state --------------------------------------------------------
 
+  /**
+   * The queue, readable but not writable.
+   *
+   * Mutation goes through `enqueue`, `move`, `remove` and `clear`, which are
+   * the only paths that announce the change, re-run lookahead and keep the deck
+   * in step.
+   */
+  get queue(): ReadonlyQueue {
+    return this.#queueView;
+  }
+
+  /**
+   * Whether the backend currently playing can do something.
+   *
+   * The one-line form of the question an agent asks before every transport
+   * call. `false` when nothing is loaded, since nothing can do anything.
+   */
+  can(capability: keyof Capabilities): boolean {
+    return this.#deck.can(capability);
+  }
+
   getState(): RuntimeSnapshot {
     return {
-      version: this.queue.version,
+      version: this.#queue.version,
       playback: this.#deck.state,
       nowPlaying: this.nowPlaying(),
-      queue: this.queue.list(),
+      queue: this.#queue.list(),
       adapters: this.adapters.map((a) => ({ id: a.id, capabilities: a.capabilities })),
     };
   }
 
   getQueue(): QueueItem[] {
-    return this.queue.list();
+    return this.#queue.list();
   }
 
   getPlayback(): PlaybackState {
@@ -175,13 +207,13 @@ export class Runtime {
 
   nowPlaying(): QueueItem | null {
     const id = this.#deck.itemId;
-    return id ? (this.queue.get(id) ?? null) : null;
+    return id ? (this.#queue.get(id) ?? null) : null;
   }
 
   // -- queue mutation -------------------------------------------------------
 
   enqueue(input: EnqueueInput, position: Position = {}): QueueItem {
-    const inserted = this.queue.insert(this.#newItem(input), position);
+    const inserted = this.#queue.insert(this.#newItem(input), position);
     this.#emitQueue();
     this.#prefetcher.pump();
     return inserted;
@@ -191,7 +223,7 @@ export class Runtime {
     const out: QueueItem[] = [];
     let anchor = position;
     for (const input of inputs) {
-      const item = this.queue.insert(this.#newItem(input), anchor);
+      const item = this.#queue.insert(this.#newItem(input), anchor);
       out.push(item);
       anchor = { after: item.id };
     }
@@ -202,7 +234,7 @@ export class Runtime {
 
   move(id: string, position: Position, expectVersion?: number): void {
     this.#checkVersion(expectVersion);
-    this.queue.move(id, position);
+    this.#queue.move(id, position);
     this.#emitQueue();
     this.#prefetcher.pump();
   }
@@ -211,14 +243,14 @@ export class Runtime {
     this.#checkVersion(expectVersion);
     const wasActive = this.#deck.itemId === id;
     this.#prefetcher.cancel(id);
-    this.queue.remove(id);
+    this.#queue.remove(id);
     this.#emitQueue();
     if (wasActive) void this.next();
     else this.#prefetcher.pump();
   }
 
   clear(opts: { keepActive?: boolean } = {}): void {
-    this.queue.clear(opts);
+    this.#queue.clear(opts);
     this.#emitQueue();
   }
 
@@ -226,18 +258,18 @@ export class Runtime {
 
   /** Play a specific entry, or resume/start the queue if no id is given. */
   async play(id?: string): Promise<void> {
-    if (id) return this.#start(this.queue.require(id));
+    if (id) return this.#start(this.#queue.require(id));
     if (this.#deck.status === 'paused') return this.#deck.resume();
     if (this.#deck.loaded) return;
-    const next = this.queue.nextPlayable(null);
+    const next = this.#queue.nextPlayable(null);
     if (next) await this.#start(next);
   }
 
   /** Enqueue and immediately play, without disturbing the rest of the queue. */
   async playNow(input: EnqueueInput): Promise<QueueItem> {
     const item = this.enqueue(input, { next: true });
-    await this.#start(this.queue.require(item.id));
-    return this.queue.require(item.id);
+    await this.#start(this.#queue.require(item.id));
+    return this.#queue.require(item.id);
   }
 
   pause(): Promise<void> {
@@ -259,14 +291,15 @@ export class Runtime {
   }
 
   async previous(): Promise<void> {
-    const prev = this.queue.previousPlayable(this.#deck.itemId);
+    const prev = this.#queue.previousPlayable(this.#deck.itemId);
     if (!prev) return;
-    this.queue.update(prev.id, { status: 'ready', error: undefined });
-    await this.#start(this.queue.require(prev.id));
+    this.#queue.update(prev.id, { status: 'ready', error: undefined });
+    await this.#start(this.#queue.require(prev.id));
   }
 
+  /** Throws if nothing is loaded, or if the backend cannot seek. */
   seek(positionMs: number): Promise<void> {
-    return this.#deck.loaded ? this.#deck.seek(positionMs) : Promise.resolve();
+    return this.#deck.seek(positionMs);
   }
 
   setVolume(volume: number): Promise<void> {
@@ -294,7 +327,11 @@ export class Runtime {
 
   // -- starting and advancing ----------------------------------------------
 
-  async #start(item: QueueItem): Promise<void> {
+  #start(item: QueueItem): Promise<void> {
+    return this.#batched(() => this.#startNow(item));
+  }
+
+  async #startNow(item: QueueItem): Promise<void> {
     if (this.#disposed) return;
     const generation = ++this.#generation;
     const cancelled = () => generation !== this.#generation;
@@ -311,8 +348,8 @@ export class Runtime {
     // A deliberate start is a fresh attempt: whatever failed last time — during
     // prefetch, or on a previous play of this same entry — gets another chance.
     // Without this, replaying an entry finds every adapter already excluded.
-    if (this.queue.get(item.id)) {
-      this.queue.update(item.id, { attempted: [], error: undefined });
+    if (this.#queue.get(item.id)) {
+      this.#queue.update(item.id, { attempted: [], error: undefined });
     }
 
     const ref = await this.#refFor(item, cancelled);
@@ -322,7 +359,7 @@ export class Runtime {
     const outcome = await this.#binder.bind(ref, { start: true, cancelled });
     if (cancelled()) return;
 
-    this.queue.update(item.id, { attempted: outcome.attempted });
+    this.#queue.update(item.id, { attempted: outcome.attempted });
     if (!outcome.ok) {
       if (!('cancelled' in outcome)) this.#fail(item.id, outcome.error);
       return this.#afterFailure(generation);
@@ -348,15 +385,15 @@ export class Runtime {
       });
       return null;
     }
-    this.queue.update(item.id, { ref, status: 'unresolved' });
-    this.#emitter.emit('item:resolved', { item: this.queue.require(item.id) });
+    this.#queue.update(item.id, { ref, status: 'unresolved' });
+    this.#emitter.emit('item:resolved', { item: this.#queue.require(item.id) });
     return ref;
   }
 
   #activate(itemId: string, adapter: Adapter, binding: Binding): void {
-    const existing = this.queue.require(itemId);
-    this.queue.cursorId = itemId;
-    this.queue.update(itemId, {
+    const existing = this.#queue.require(itemId);
+    this.#queue.cursorId = itemId;
+    this.#queue.update(itemId, {
       status: 'active',
       binding,
       ref: { ...existing.ref, ...binding.ref },
@@ -367,20 +404,24 @@ export class Runtime {
     this.#lastStartedId = itemId;
 
     this.#emitQueue();
-    this.#emitter.emit('item:started', { item: this.queue.require(itemId) });
+    this.#emitter.emit('item:started', { item: this.#queue.require(itemId) });
     this.#prefetcher.pump();
   }
 
-  async #advance(reason: 'completed' | 'skipped'): Promise<void> {
-    const fromId = this.#deck.itemId ?? this.queue.cursorId;
+  #advance(reason: 'completed' | 'skipped'): Promise<void> {
+    return this.#batched(() => this.#advanceNow(reason));
+  }
 
-    if (fromId && this.queue.get(fromId)) {
-      this.queue.update(fromId, { status: reason === 'completed' ? 'ended' : 'skipped' });
+  async #advanceNow(reason: 'completed' | 'skipped'): Promise<void> {
+    const fromId = this.#deck.itemId ?? this.#queue.cursorId;
+
+    if (fromId && this.#queue.get(fromId)) {
+      this.#queue.update(fromId, { status: reason === 'completed' ? 'ended' : 'skipped' });
       this.#emitQueue();
-      this.#emitter.emit('item:ended', { item: this.queue.require(fromId), reason });
+      this.#emitter.emit('item:ended', { item: this.#queue.require(fromId), reason });
     }
 
-    const next = this.queue.nextPlayable(fromId);
+    const next = this.#queue.nextPlayable(fromId);
     if (!next) return this.#halt('ended');
     await this.#start(next);
   }
@@ -390,7 +431,7 @@ export class Runtime {
     if (generation !== this.#generation) return;
     this.#deck.patch({ status: 'idle', itemId: null, adapterId: null });
     if (!this.#opts.autoAdvance) return;
-    const next = this.queue.nextPlayable(this.queue.cursorId);
+    const next = this.#queue.nextPlayable(this.#queue.cursorId);
     if (next) await this.#start(next);
   }
 
@@ -464,7 +505,7 @@ export class Runtime {
     this.#deck.detach();
     if (previousId) this.#endPrevious(null, previousId);
 
-    const adopted = this.queue.insert(
+    const adopted = this.#queue.insert(
       {
         id: this.#nextId(),
         status: 'ready',
@@ -494,8 +535,8 @@ export class Runtime {
     const current = this.nowPlaying();
     const contextId = current && current.id !== item.id ? current.id : this.#lastStartedId;
     const nowPlaying =
-      contextId && contextId !== item.id ? (this.queue.get(contextId) ?? null) : null;
-    return { item, nowPlaying, queue: this.queue.list() };
+      contextId && contextId !== item.id ? (this.#queue.get(contextId) ?? null) : null;
+    return { item, nowPlaying, queue: this.#queue.list() };
   }
 
   /**
@@ -508,32 +549,83 @@ export class Runtime {
   #endPrevious(nextItemId: string | null, explicitId?: string): void {
     const id = explicitId ?? this.#deck.itemId;
     if (!id || id === nextItemId) return;
-    const item = this.queue.get(id);
+    const item = this.#queue.get(id);
     if (!item || TERMINAL.has(item.status)) return;
-    this.queue.update(id, { status: 'ended' });
-    this.#emitter.emit('item:ended', { item: this.queue.require(id), reason: 'replaced' });
+    this.#queue.update(id, { status: 'ended' });
+    this.#emitter.emit('item:ended', { item: this.#queue.require(id), reason: 'replaced' });
   }
 
   #fail(itemId: string, error: SerializedError): void {
-    if (!this.queue.get(itemId)) return;
-    this.queue.update(itemId, { status: 'failed', error });
+    if (!this.#queue.get(itemId)) return;
+    this.#queue.update(itemId, { status: 'failed', error });
     this.#emitQueue();
-    this.#emitter.emit('item:failed', { item: this.queue.require(itemId), error });
+    this.#emitter.emit('item:failed', { item: this.#queue.require(itemId), error });
   }
 
   #checkVersion(expected?: number): void {
-    if (expected !== undefined && expected !== this.queue.version) {
+    if (expected !== undefined && expected !== this.#queue.version) {
       throw new AQError(
         ErrorCodes.VersionConflict,
-        `queue is at version ${this.queue.version}, caller expected ${expected}`,
+        `queue is at version ${this.#queue.version}, caller expected ${expected}`,
       );
     }
   }
 
+  /**
+   * Note that the queue moved. One announcement per logical change.
+   *
+   * Starting a track touches the queue five times — clearing the last attempt,
+   * recording which adapters were tried, storing a binding, marking it active,
+   * plus whatever lookahead does — and a host rendering the list would repaint
+   * on every one for what a person would call a single change.
+   *
+   * Two mechanisms, because one is not enough. Coalescing into a microtask
+   * collapses a synchronous burst, but an operation like starting a track
+   * awaits between its writes and so spans many turns; `#batched` holds the
+   * announcement for the whole operation. Reads through `getState` and `queue`
+   * are never deferred — only the telling is.
+   */
   #emitQueue(): void {
-    this.#emitter.emit('queue:changed', {
-      version: this.queue.version,
-      queue: this.queue.list(),
+    this.#queueDirty = true;
+    if (this.#batchDepth > 0) return;
+    this.#scheduleQueueFlush();
+  }
+
+  #scheduleQueueFlush(): void {
+    if (this.#flushScheduled) return;
+    this.#flushScheduled = true;
+    queueMicrotask(() => {
+      this.#flushScheduled = false;
+      if (this.#batchDepth > 0) return; // The batch will flush on its way out.
+      this.#flushQueue();
     });
+  }
+
+  #flushQueue(): void {
+    if (!this.#queueDirty || this.#disposed) return;
+    this.#queueDirty = false;
+    this.#emitter.emit('queue:changed', {
+      version: this.#queue.version,
+      queue: this.#queue.list(),
+    });
+  }
+
+  /**
+   * Hold queue announcements until a multi-step operation has settled.
+   *
+   * Anything already pending is flushed first, so edits a caller made before
+   * starting an operation are announced before it rather than being folded into
+   * its result — a host should see the queue it built, then see it start
+   * playing, in that order.
+   */
+  async #batched<T>(operation: () => Promise<T>): Promise<T> {
+    if (this.#batchDepth === 0) this.#flushQueue();
+    this.#batchDepth++;
+    try {
+      return await operation();
+    } finally {
+      this.#batchDepth--;
+      if (this.#batchDepth === 0 && this.#queueDirty) this.#scheduleQueueFlush();
+    }
   }
 }
