@@ -11,6 +11,30 @@
     "./testing": "./dist/src/testing.js",
     "./internal": "./dist/src/internal.js"
   },
-  "files": ["dist/src"],
-  "sideEffects": false
+  "files": [
+    "dist/src"
+  ],
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tothienbao6a0/aq.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/tothienbao6a0/aq#readme",
+  "bugs": {
+    "url": "https://github.com/tothienbao6a0/aq/issues"
+  },
+  "keywords": [
+    "audio",
+    "queue",
+    "playback",
+    "agents",
+    "ai-agents",
+    "media",
+    "runtime",
+    "adapters"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
