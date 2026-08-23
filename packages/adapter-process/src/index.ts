@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createInterface, type Interface } from 'node:readline';
-import { defaultCapabilities } from 'upnext';
+import { defaultCapabilities } from 'upnext-core';
 import type {
   Adapter,
   AdapterEvent,
@@ -8,7 +8,7 @@ import type {
   Binding,
   Capabilities,
   MediaRef,
-} from 'upnext';
+} from 'upnext-core';
 import { isEvent, type Handshake, type Incoming, type Response } from './protocol.js';
 
 export * from './protocol.js';

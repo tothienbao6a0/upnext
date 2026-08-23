@@ -8,7 +8,7 @@ rather than as a public issue. Expect a first response within a week.
 
 ## What is in scope
 
-`upnext` does no I/O — no filesystem, no network, no process spawning — so
+`upnext-core` does no I/O — no filesystem, no network, no process spawning — so
 its attack surface is the data it is handed. Things worth reporting:
 
 - A crafted `MediaRef` that causes the core to behave outside its contract,
@@ -31,4 +31,4 @@ The adapters are where the real surface is:
   you wrote leaks one, that is a bug in that adapter.
 - The `resolveIntent` callback. It is host-supplied arbitrary code, and it is
   meant to be.
-- Anything under `upnext/internal`, which is unsupported.
+- Anything under `upnext-core/internal`, which is unsupported.
