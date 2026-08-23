@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # The workflow actions are the only third-party code that runs with any
+  # privilege here, so they are the thing worth keeping current. `@aq/core`
+  # itself has no dependencies to update.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "build"
