@@ -1,9 +1,9 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Runtime } from '@aq/core';
-import type { MediaRef } from '@aq/core';
-import { LocalAdapter } from '@aq/adapter-local';
+import { Runtime } from '@upnext/core';
+import type { MediaRef } from '@upnext/core';
+import { LocalAdapter } from '@upnext/adapter-local';
 import { writeTone } from './tones.js';
 
 /**
@@ -13,7 +13,7 @@ import { writeTone } from './tones.js';
  * into internals, and nothing knows what a WAV file is except the fixture code.
  */
 async function main(): Promise<void> {
-  const dir = await mkdtemp(join(tmpdir(), 'aq-demo-'));
+  const dir = await mkdtemp(join(tmpdir(), 'upnext-demo-'));
   const files = await Promise.all([
     writeTone(dir, 'first', 440, 2),
     writeTone(dir, 'second', 554, 2),

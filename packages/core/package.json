@@ -1,5 +1,5 @@
 {
-  "name": "@aq/core",
+  "name": "@upnext/core",
   "version": "0.0.1",
   "description": "Source-agnostic media queue and playback runtime. Zero dependencies, no I/O.",
   "license": "Apache-2.0",
@@ -17,12 +17,12 @@
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tothienbao6a0/aq.git",
+    "url": "git+https://github.com/tothienbao6a0/upnext.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/tothienbao6a0/aq#readme",
+  "homepage": "https://github.com/tothienbao6a0/upnext#readme",
   "bugs": {
-    "url": "https://github.com/tothienbao6a0/aq/issues"
+    "url": "https://github.com/tothienbao6a0/upnext/issues"
   },
   "keywords": [
     "audio",

@@ -1,4 +1,4 @@
-import { AQError, ErrorCodes } from './errors.js';
+import { UpNextError, ErrorCodes } from './errors.js';
 import { identityKey } from './identity.js';
 import type { ItemStatus, Position, QueueItem } from './types/index.js';
 
@@ -105,7 +105,7 @@ export class Queue {
 
   move(id: string, position: Position): void {
     const from = this.indexOf(id);
-    if (from < 0) throw new AQError(ErrorCodes.NotFound, `no queue item with id ${id}`);
+    if (from < 0) throw new UpNextError(ErrorCodes.NotFound, `no queue item with id ${id}`);
     const [item] = this.#items.splice(from, 1);
     // Resolve the target *after* removal so anchors reflect the list the item
     // is landing in, not the one it left.
@@ -158,7 +158,7 @@ export class Queue {
 
   #require(id: string): QueueItem {
     const item = this.#live(id);
-    if (!item) throw new AQError(ErrorCodes.NotFound, `no queue item with id ${id}`);
+    if (!item) throw new UpNextError(ErrorCodes.NotFound, `no queue item with id ${id}`);
     return item;
   }
 
@@ -166,14 +166,14 @@ export class Queue {
     if (position.after) {
       const index = this.indexOf(position.after);
       if (index < 0) {
-        throw new AQError(ErrorCodes.NotFound, `anchor item ${position.after} not found`);
+        throw new UpNextError(ErrorCodes.NotFound, `anchor item ${position.after} not found`);
       }
       return index + 1;
     }
     if (position.before) {
       const index = this.indexOf(position.before);
       if (index < 0) {
-        throw new AQError(ErrorCodes.NotFound, `anchor item ${position.before} not found`);
+        throw new UpNextError(ErrorCodes.NotFound, `anchor item ${position.before} not found`);
       }
       return index;
     }

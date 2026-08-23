@@ -1,4 +1,4 @@
-import { AQError, ErrorCodes } from './errors.js';
+import { UpNextError, ErrorCodes } from './errors.js';
 import type { Adapter } from './types/index.js';
 
 /**
@@ -25,7 +25,7 @@ export function validateAdapter(adapter: Adapter): void {
 
   const caps = adapter.capabilities;
   if (!caps) {
-    throw new AQError(
+    throw new UpNextError(
       ErrorCodes.AdapterFailed,
       `adapter ${adapter.id}: \`capabilities\` is required`,
       adapter.id,
@@ -62,7 +62,7 @@ export function validateAdapter(adapter: Adapter): void {
   }
 
   if (problems.length > 0) {
-    throw new AQError(
+    throw new UpNextError(
       ErrorCodes.AdapterFailed,
       `adapter ${adapter.id} is inconsistent:\n  - ${problems.join('\n  - ')}`,
       adapter.id,

@@ -1,7 +1,7 @@
 import { Binder } from './binder.js';
 import { Deck } from './deck.js';
 import { Emitter } from './emitter.js';
-import { AQError, ErrorCodes, toSerializedError } from './errors.js';
+import { UpNextError, ErrorCodes, toSerializedError } from './errors.js';
 import { createIdFactory } from './ids.js';
 import { isPlayable } from './identity.js';
 import { createItem, type EnqueueInput } from './input.js';
@@ -614,7 +614,7 @@ export class Runtime {
 
   #checkVersion(expected?: number): void {
     if (expected !== undefined && expected !== this.#queue.version) {
-      throw new AQError(
+      throw new UpNextError(
         ErrorCodes.VersionConflict,
         `queue is at version ${this.#queue.version}, caller expected ${expected}`,
       );
