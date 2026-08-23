@@ -27,7 +27,7 @@ test('optimistic concurrency rejects a write against a stale version', () => {
   assert.throws(() => runtime.move(a.id, { end: true }, stale), /caller expected/);
 });
 
-test('every mutation bumps the version and announces itself', () => {
+test('a burst of mutations announces once, carrying the settled state', async () => {
   const runtime = new Runtime({ scheduler: new ManualScheduler() });
   const changes = collect(runtime, 'queue:changed');
 
@@ -35,11 +35,61 @@ test('every mutation bumps the version and announces itself', () => {
   runtime.enqueue({ title: 'b' });
   runtime.move(a.id, { end: true });
   runtime.remove(a.id);
+  await flush();
 
-  assert.equal(changes.length, 4);
-  const versions = changes.map((c) => c.version);
-  assert.deepEqual(versions, [...versions].sort((x, y) => x - y));
-  assert.equal(new Set(versions).size, versions.length, 'versions must be distinct');
+  assert.equal(changes.length, 1, 'four mutations in one turn are one logical change');
+  assert.equal(changes[0]!.version, runtime.getState().version);
+  assert.deepEqual(changes[0]!.queue.map((i) => i.ref.title), ['b']);
+});
+
+test('separate turns announce separately', async () => {
+  const runtime = new Runtime({ scheduler: new ManualScheduler() });
+  const changes = collect(runtime, 'queue:changed');
+
+  runtime.enqueue({ title: 'a' });
+  await flush();
+  runtime.enqueue({ title: 'b' });
+  await flush();
+
+  assert.equal(changes.length, 2);
+  assert.ok(changes[1]!.version > changes[0]!.version);
+});
+
+test('starting a track is one announcement, not one per internal write', async () => {
+  const { runtime } = harness({}, { lookahead: 0 });
+  runtime.enqueue({ title: 'one' });
+  await flush();
+
+  const changes = collect(runtime, 'queue:changed');
+  await runtime.play();
+  await flush();
+
+  assert.equal(changes.length, 1, 'clearing attempts, binding and activating is one change');
+  assert.equal(changes[0]!.queue[0]!.status, 'active', 'and it carries the settled state');
+});
+
+test('edits made before an operation are announced before it', async () => {
+  const { runtime } = harness({}, { lookahead: 0 });
+  const order: string[] = [];
+  runtime.on('queue:changed', () => order.push('queue'));
+  runtime.on('item:started', () => order.push('started'));
+
+  runtime.enqueue({ title: 'one' });
+  await runtime.play();
+  await flush();
+
+  assert.equal(order[0], 'queue', 'the host should see the queue it built before it starts');
+  assert.ok(order.includes('started'));
+});
+
+test('reads are never deferred, only the announcement is', () => {
+  const runtime = new Runtime({ scheduler: new ManualScheduler() });
+  runtime.enqueue({ title: 'a' });
+
+  // No await: an agent that enqueues and immediately reads must see its write.
+  assert.equal(runtime.getQueue().length, 1);
+  assert.equal(runtime.queue.length, 1);
+  assert.equal(runtime.getState().queue[0]!.ref.title, 'a');
 });
 
 test('enqueueMany keeps the order it was given', () => {
