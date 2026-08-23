@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc --build",
     "clean": "tsc --build --clean",
-    "test": "npm run build && node --test \"packages/*/dist/test/**/*.test.js\"",
+    "test": "npm run build && node --test packages/*/dist/test/*.test.js",
     "demo": "npm run build && node packages/demo/dist/src/cli.js"
   },
   "devDependencies": {
