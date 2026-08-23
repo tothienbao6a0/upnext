@@ -164,6 +164,31 @@ nothing comes out of the speakers. It is a warning, not a verdict: the entry
 keeps its place and is retried in full when it comes up, because a backend that
 was briefly unreachable during lookahead is usually fine a minute later.
 
+### Failure is a first-class case
+
+Three things look identical from a listener's chair — nothing is playing — and
+the runtime distinguishes them.
+
+**A backend that lies** is rejected when you register it. Capabilities are
+promises about behaviour, and most are only deliverable through a specific
+optional method, so declaring `endOfTrack: 'event'` without a `subscribe` would
+quietly never advance the queue. `addAdapter` throws instead, listing every
+inconsistency at once with the fix in the message.
+
+**A backend that breaks** is taken out of the running. If its `init` fails it is
+not chosen, and `getState().adapters` reports `available: false` with the
+reason — so an agent can tell "no Spotify" from "Spotify is down".
+
+**A backend that never answers** is the dangerous one, because an unbounded wait
+means the queue stops forever with no error at all. Every call out of the
+library — adapter methods and your intent resolver — is bounded by `timeoutMs`
+(30s default, `null` to disable), which turns a hang into an ordinary failure
+that falls through to the next source.
+
+Cancellation stops what it cancels. Skipping while a backend is mid-`play`
+tells that backend to stop rather than leaving it running alongside whatever
+started next, which is otherwise two tracks at once.
+
 ### Events are per logical change, not per write
 
 Starting a track touches the queue five times internally. Subscribers get one
@@ -230,7 +255,7 @@ and no flakes.
 
 ```bash
 npm install
-npm test        # 84 tests
+npm test        # 93 tests
 npm run demo    # makes actual sound — no assets, no downloads
 ```
 
