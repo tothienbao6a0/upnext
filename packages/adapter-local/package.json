@@ -1,0 +1,14 @@
+{
+  "name": "@aq/adapter-local",
+  "version": "0.0.1",
+  "description": "Plays local and remote audio files through ffplay or afplay. The reference backend: no credentials, no network, no accounts.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": { ".": "./dist/src/index.js" },
+  "files": ["dist/src"],
+  "dependencies": {
+    "@aq/core": "0.0.1"
+  }
+}
