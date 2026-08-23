@@ -1,7 +1,7 @@
 import { Binder } from './binder.js';
 import { Deck } from './deck.js';
 import { Emitter } from './emitter.js';
-import { AQError, ErrorCodes } from './errors.js';
+import { AQError, ErrorCodes, toSerializedError } from './errors.js';
 import { createIdFactory } from './ids.js';
 import { isPlayable } from './identity.js';
 import { createItem, type EnqueueInput } from './input.js';
@@ -31,12 +31,20 @@ export type { RuntimeOptions } from './options.js';
 /** Statuses an entry never leaves, so it must not be ended or reported twice. */
 const TERMINAL = new Set<QueueItem['status']>(['ended', 'skipped', 'failed']);
 
+export interface AdapterSummary {
+  id: string;
+  capabilities: Capabilities;
+  /** False when the adapter's `init` failed; it will not be chosen. */
+  available: boolean;
+  error?: SerializedError;
+}
+
 export interface RuntimeSnapshot {
   version: number;
   playback: PlaybackState;
   nowPlaying: QueueItem | null;
   queue: QueueItem[];
-  adapters: Array<{ id: string; capabilities: Capabilities }>;
+  adapters: AdapterSummary[];
 }
 
 /**
@@ -111,9 +119,13 @@ export class Runtime {
     );
 
     this.#binder = new Binder({
-      adapters: () => this.#registry.list(),
+      // Only backends that actually came up. One whose `init` failed will
+      // usually still accept a `resolve` and then fail every playback, which
+      // looks to a listener like the queue is broken rather than one source.
+      adapters: () => this.#registry.available(),
       matchThreshold: this.#opts.matchThreshold,
       resolveIntent: this.#opts.resolveIntent,
+      timeoutMs: this.#opts.timeoutMs,
       onAdapterError: (adapterId, error) =>
         this.#emitter.emit('adapter:error', { adapterId, error }),
     });
@@ -193,7 +205,17 @@ export class Runtime {
       playback: this.#deck.state,
       nowPlaying: this.nowPlaying(),
       queue: this.#queue.list(),
-      adapters: this.adapters.map((a) => ({ id: a.id, capabilities: a.capabilities })),
+      adapters: this.adapters.map((adapter) => {
+        const error = this.#registry.failure(adapter.id);
+        return {
+          id: adapter.id,
+          capabilities: adapter.capabilities,
+          // Registered but not usable is worth saying out loud: an agent can
+          // tell the difference between "no Spotify" and "Spotify is down".
+          available: !error,
+          ...(error ? { error } : {}),
+        };
+      }),
     };
   }
 
@@ -245,7 +267,7 @@ export class Runtime {
     this.#prefetcher.cancel(id);
     this.#queue.remove(id);
     this.#emitQueue();
-    if (wasActive) void this.next();
+    if (wasActive) this.#detached(this.next(), 'advancing after the active entry was removed');
     else this.#prefetcher.pump();
   }
 
@@ -372,7 +394,17 @@ export class Runtime {
   async #refFor(item: QueueItem, cancelled: () => boolean): Promise<MediaRef | null> {
     if (!item.intent || isPlayable(item.ref)) return item.ref;
 
-    const ref = await this.#binder.intent(item.intent, this.#intentContext(item));
+    // A host resolver is arbitrary code — it can throw, and it can time out.
+    // Either way that is this entry failing, not the caller's `play()` failing.
+    let ref: MediaRef | null;
+    try {
+      ref = await this.#binder.intent(item.intent, this.#intentContext(item));
+    } catch (err) {
+      if (cancelled()) return null;
+      this.#fail(item.id, toSerializedError(err));
+      return null;
+    }
+
     if (cancelled()) return null;
     if (!ref) {
       this.#fail(item.id, {
@@ -452,8 +484,26 @@ export class Runtime {
   // -- backend feedback -----------------------------------------------------
 
   #onEnded(): void {
-    if (!this.#opts.autoAdvance) return void this.#halt('ended');
-    void this.#advance('completed');
+    this.#detached(
+      this.#opts.autoAdvance ? this.#advance('completed') : this.#halt('ended'),
+      'advancing after a track ended',
+    );
+  }
+
+  /**
+   * Follow a promise nobody is waiting on.
+   *
+   * A backend finishing a track, or a removal that forces a skip, starts work
+   * with no caller to return to. An unhandled rejection there takes down the
+   * host process by default in modern Node — so these are reported as runtime
+   * errors instead, which is the difference between one track failing to
+   * advance and the whole application dying.
+   */
+  #detached(work: Promise<unknown>, what: string): void {
+    void work.catch((err: unknown) => {
+      const error = toSerializedError(err);
+      this.#emitter.emit('error', { error, while: what });
+    });
   }
 
   #onAdapterEvent(adapter: Adapter, event: AdapterEvent): void {
