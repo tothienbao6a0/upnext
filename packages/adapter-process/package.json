@@ -6,9 +6,32 @@
   "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
-  "exports": { ".": "./dist/src/index.js" },
-  "files": ["dist/src"],
+  "exports": {
+    ".": "./dist/src/index.js"
+  },
+  "files": [
+    "dist/src"
+  ],
   "dependencies": {
     "@aq/core": "0.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tothienbao6a0/aq.git",
+    "directory": "packages/adapter-process"
+  },
+  "homepage": "https://github.com/tothienbao6a0/aq#readme",
+  "bugs": {
+    "url": "https://github.com/tothienbao6a0/aq/issues"
+  },
+  "keywords": [
+    "audio",
+    "playback",
+    "subprocess",
+    "json-lines",
+    "aq-adapter"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }

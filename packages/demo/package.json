@@ -9,5 +9,14 @@
   "dependencies": {
     "@aq/adapter-local": "0.0.1",
     "@aq/core": "0.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tothienbao6a0/aq.git",
+    "directory": "packages/demo"
+  },
+  "homepage": "https://github.com/tothienbao6a0/aq#readme",
+  "bugs": {
+    "url": "https://github.com/tothienbao6a0/aq/issues"
   }
 }
