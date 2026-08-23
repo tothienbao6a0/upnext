@@ -1,0 +1,44 @@
+name: Bug report
+description: Something does not behave the way the contract says it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Playback bugs are usually races, and races are usually about *which
+        backend* and *what it can do*. The capability questions below matter
+        more than they look.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: >
+        Ideally a failing test using `FakeAdapter` — see
+        `packages/core/test/` for the shape. Otherwise the sequence of calls.
+      render: ts
+    validations:
+      required: true
+
+  - type: textarea
+    id: capabilities
+    attributes:
+      label: Which backend, and what does it declare?
+      description: >
+        Paste `runtime.getState().playback.capabilities`, or the adapter's
+        declared capabilities if nothing was loaded.
+      render: json
+
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: "@aq/core 0.0.1, Node 22.19, macOS 15"

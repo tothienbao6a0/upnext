@@ -1,0 +1,50 @@
+name: Adapter proposal
+description: A new source or sink for audio.
+labels: [adapter]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Adapters are the point of this project, so these are welcome even if you
+        do not intend to build it yourself. The questions below are the ones
+        that decide whether the existing contract is enough.
+
+  - type: input
+    id: backend
+    attributes:
+      label: What is the backend?
+      placeholder: "Spotify via spogo, YouTube Music, Sonos, a Bluetooth speaker…"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: end_of_track
+    attributes:
+      label: How would it learn a track ended?
+      options:
+        - It pushes an event
+        - It has to be polled
+        - Neither — only a duration to time against
+        - Not sure yet
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: shape
+    attributes:
+      label: What is true of it?
+      options:
+        - label: A human can change it behind our back (a native app with its own buttons)
+        - label: It can hold a list of upcoming tracks itself
+        - label: It reports a real playback position
+        - label: It can seek
+        - label: It can search its own catalogue
+
+  - type: textarea
+    id: gap
+    attributes:
+      label: Does anything in the current contract not fit?
+      description: >
+        If this backend needs something `Adapter` cannot express, that is the
+        most useful thing you can tell us — it means the protocol is missing
+        something, which matters more than any single adapter.
