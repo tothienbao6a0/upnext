@@ -1,4 +1,4 @@
-# aq *(placeholder name)*
+# aq
 
 **One queue and one playback API over every audio source, built to be embedded in agent harnesses.**
 

@@ -2,7 +2,7 @@
   "name": "aq-workspace",
   "private": true,
   "version": "0.0.0",
-  "description": "Source-agnostic media queue + playback runtime for agents (placeholder name: aq)",
+  "description": "Source-agnostic media queue and playback runtime for agents.",
   "license": "Apache-2.0",
   "workspaces": [
     "packages/*"
