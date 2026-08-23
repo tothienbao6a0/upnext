@@ -14,7 +14,8 @@
     "build": "tsc --build",
     "clean": "tsc --build --clean",
     "test": "npm run build && node --test packages/*/dist/test/*.test.js",
-    "demo": "npm run build && node packages/demo/dist/src/cli.js"
+    "demo": "npm run build && node packages/demo/dist/src/cli.js",
+    "release": "npm run build && npm test && npm publish -w packages/core && npm publish -w packages/adapter-local && npm publish -w packages/adapter-process"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
