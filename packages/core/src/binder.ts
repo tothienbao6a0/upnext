@@ -1,4 +1,4 @@
-import { ErrorCodes, toSerializedError } from './errors.js';
+import { AQError, ErrorCodes, toSerializedError } from './errors.js';
 import { similarity } from './identity.js';
 import { describe } from './input.js';
 import type {
@@ -19,6 +19,11 @@ export interface BinderDeps {
    */
   matchThreshold: number;
   resolveIntent?: IntentResolver | undefined;
+  /**
+   * How long any single call out of the library may take before it is treated
+   * as failed. `null` waits forever.
+   */
+  timeoutMs: number | null;
   onAdapterError(adapterId: string, error: SerializedError): void;
 }
 
@@ -56,7 +61,7 @@ export class Binder {
   async intent(text: string, ctx: IntentContext): Promise<MediaRef | null> {
     const resolve = this.deps.resolveIntent;
     if (resolve) {
-      const result = await resolve(text, ctx);
+      const result = await this.#guard(Promise.resolve(resolve(text, ctx)), 'intent resolver');
       if (Array.isArray(result)) return result[0] ?? null;
       return result ?? null;
     }
@@ -77,9 +82,14 @@ export class Binder {
       .filter((a) => a.search && a.capabilities.search && (!adapterId || a.id === adapterId));
 
     const settled = await Promise.allSettled(
-      targets.map(async (adapter) =>
-        (await adapter.search!(query, limit)).map((ref) => ({ ...ref, adapterId: adapter.id })),
-      ),
+      targets.map(async (adapter) => {
+        const results = await this.#guard(
+          adapter.search!(query, limit),
+          `${adapter.id} search`,
+          adapter.id,
+        );
+        return results.map((ref) => ({ ...ref, adapterId: adapter.id }));
+      }),
     );
 
     const out: Array<MediaRef & { adapterId: string }> = [];
@@ -116,8 +126,11 @@ export class Binder {
 
     for (const adapter of candidates) {
       attempted.add(adapter.id);
+      /** Whether this backend has been handed the item and may now hold it. */
+      let engaged = false;
+
       try {
-        const binding = await adapter.resolve(ref);
+        const binding = await this.#guard(adapter.resolve(ref), `${adapter.id} resolve`, adapter.id);
         if (cancelled()) return { ok: false, cancelled: true, attempted: [...attempted] };
         if (!binding) continue;
 
@@ -133,15 +146,20 @@ export class Binder {
         }
 
         if (opts.start) {
-          await adapter.load(binding);
-          if (cancelled()) return { ok: false, cancelled: true, attempted: [...attempted] };
-          await adapter.play();
-          if (cancelled()) return { ok: false, cancelled: true, attempted: [...attempted] };
+          engaged = true;
+          await this.#guard(adapter.load(binding), `${adapter.id} load`, adapter.id);
+          if (cancelled()) return this.#abandon(adapter, attempted);
+          await this.#guard(adapter.play(), `${adapter.id} play`, adapter.id);
+          if (cancelled()) return this.#abandon(adapter, attempted);
         }
 
         return { ok: true, adapter, binding, attempted: [...attempted] };
       } catch (err) {
         lastError = toSerializedError(err, adapter.id);
+        // A backend that got as far as `load` may be holding the item, or even
+        // making noise, so it has to be told to let go before the next one is
+        // handed the same thing.
+        if (engaged) await this.#quieten(adapter);
         this.deps.onAdapterError(adapter.id, lastError);
       }
     }
@@ -154,6 +172,63 @@ export class Binder {
         message: `nothing could play ${describe(ref)}`,
       },
     };
+  }
+
+  /**
+   * The runtime changed its mind while this backend was starting.
+   *
+   * The generation counter keeps the runtime from *tracking* superseded work,
+   * but a backend that reached `play` is already making sound and will happily
+   * keep doing so alongside whatever started next. Stopping it is the other
+   * half of cancellation.
+   */
+  async #abandon(adapter: Adapter, attempted: Set<string>): Promise<BindOutcome> {
+    await this.#quieten(adapter);
+    return { ok: false, cancelled: true, attempted: [...attempted] };
+  }
+
+  async #quieten(adapter: Adapter): Promise<void> {
+    try {
+      await adapter.stop();
+    } catch (err) {
+      this.deps.onAdapterError(adapter.id, toSerializedError(err, adapter.id));
+    }
+  }
+
+  /**
+   * Bound how long the library will wait on code it does not control.
+   *
+   * Every call here crosses out of the runtime — into an adapter talking to a
+   * network service, or into a host resolver that may be waiting on a model. If
+   * one of them never returns, the queue stops forever with no error and
+   * nothing playing, which is the worst failure this library can have. A
+   * timeout turns that into an ordinary failure the caller already knows how to
+   * handle: try the next source.
+   */
+  #guard<T>(work: Promise<T>, what: string, adapterId?: string): Promise<T> {
+    const ms = this.deps.timeoutMs;
+    if (ms === null) return work;
+
+    return new Promise<T>((resolve, reject) => {
+      // Deliberately not unref'd. An unref'd timer cannot fire when it is the
+      // only thing pending — which is precisely the situation it exists for,
+      // since a backend that has gone quiet leaves nothing else on the loop.
+      // The timer is cleared the moment the work settles, so it only holds the
+      // process open while a call is genuinely outstanding.
+      const timer = setTimeout(() => {
+        reject(new AQError(ErrorCodes.Timeout, `${what} timed out after ${ms}ms`, adapterId));
+      }, ms);
+      work.then(
+        (value) => {
+          clearTimeout(timer);
+          resolve(value);
+        },
+        (err: unknown) => {
+          clearTimeout(timer);
+          reject(err as Error);
+        },
+      );
+    });
   }
 
   /** Adapters that claim this ref, best first. */
