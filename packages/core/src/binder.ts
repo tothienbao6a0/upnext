@@ -1,4 +1,4 @@
-import { AQError, ErrorCodes, toSerializedError } from './errors.js';
+import { UpNextError, ErrorCodes, toSerializedError } from './errors.js';
 import { similarity } from './identity.js';
 import { describe } from './input.js';
 import type {
@@ -216,7 +216,7 @@ export class Binder {
       // The timer is cleared the moment the work settles, so it only holds the
       // process open while a call is genuinely outstanding.
       const timer = setTimeout(() => {
-        reject(new AQError(ErrorCodes.Timeout, `${what} timed out after ${ms}ms`, adapterId));
+        reject(new UpNextError(ErrorCodes.Timeout, `${what} timed out after ${ms}ms`, adapterId));
       }, ms);
       work.then(
         (value) => {

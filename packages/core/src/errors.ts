@@ -1,12 +1,12 @@
 import type { SerializedError } from './types/index.js';
 
-export class AQError extends Error {
+export class UpNextError extends Error {
   readonly code: string;
   readonly adapterId?: string;
 
   constructor(code: string, message: string, adapterId?: string) {
     super(message);
-    this.name = 'AQError';
+    this.name = 'UpNextError';
     this.code = code;
     if (adapterId !== undefined) this.adapterId = adapterId;
   }
@@ -20,7 +20,7 @@ export class AQError extends Error {
 
 /** Errors cross process boundaries as data, so everything normalizes to this. */
 export function toSerializedError(err: unknown, adapterId?: string): SerializedError {
-  if (err instanceof AQError) {
+  if (err instanceof UpNextError) {
     const out = err.toJSON();
     if (adapterId && !out.adapterId) out.adapterId = adapterId;
     return out;

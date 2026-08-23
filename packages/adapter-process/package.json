@@ -1,5 +1,5 @@
 {
-  "name": "@aq/adapter-process",
+  "name": "@upnext/adapter-process",
   "version": "0.0.1",
   "description": "Run an adapter as a subprocess speaking newline-delimited JSON, so backends can be written in any language.",
   "license": "Apache-2.0",
@@ -13,23 +13,23 @@
     "dist/src"
   ],
   "dependencies": {
-    "@aq/core": "0.0.1"
+    "@upnext/core": "0.0.1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tothienbao6a0/aq.git",
+    "url": "git+https://github.com/tothienbao6a0/upnext.git",
     "directory": "packages/adapter-process"
   },
-  "homepage": "https://github.com/tothienbao6a0/aq#readme",
+  "homepage": "https://github.com/tothienbao6a0/upnext#readme",
   "bugs": {
-    "url": "https://github.com/tothienbao6a0/aq/issues"
+    "url": "https://github.com/tothienbao6a0/upnext/issues"
   },
   "keywords": [
     "audio",
     "playback",
     "subprocess",
     "json-lines",
-    "aq-adapter"
+    "upnext-adapter"
   ],
   "publishConfig": {
     "access": "public"

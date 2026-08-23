@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { after, before, test } from 'node:test';
-import { Runtime } from '@aq/core';
+import { Runtime } from '@upnext/core';
 import { ProcessAdapter } from '../src/index.js';
 
 /**
@@ -20,7 +20,7 @@ let dir: string;
 let track: string;
 
 before(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'aq-proc-'));
+  dir = await mkdtemp(join(tmpdir(), 'upnext-proc-'));
   track = join(dir, 'track.wav');
   await writeFile(track, Buffer.alloc(64));
 });

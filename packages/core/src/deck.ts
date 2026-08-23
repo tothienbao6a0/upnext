@@ -1,4 +1,4 @@
-import { AQError, ErrorCodes } from './errors.js';
+import { UpNextError, ErrorCodes } from './errors.js';
 import type { Scheduler } from './scheduler.js';
 import { Watcher } from './watcher.js';
 import { idlePlayback } from './types/index.js';
@@ -170,10 +170,10 @@ export class Deck {
 
   #require(capability: 'pause' | 'seek' | 'volume'): Watcher {
     const watcher = this.#watcher;
-    if (!watcher) throw new AQError(ErrorCodes.NotFound, 'nothing is loaded');
+    if (!watcher) throw new UpNextError(ErrorCodes.NotFound, 'nothing is loaded');
     const method = capability === 'volume' ? 'setVolume' : capability;
     if (!watcher.adapter.capabilities[capability] || !watcher.adapter[method]) {
-      throw new AQError(
+      throw new UpNextError(
         ErrorCodes.Unsupported,
         `adapter ${watcher.adapter.id} cannot ${capability === 'volume' ? 'set volume' : capability}`,
         watcher.adapter.id,

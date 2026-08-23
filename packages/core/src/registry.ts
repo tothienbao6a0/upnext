@@ -1,4 +1,4 @@
-import { AQError, ErrorCodes, toSerializedError } from './errors.js';
+import { UpNextError, ErrorCodes, toSerializedError } from './errors.js';
 import { validateAdapter } from './validate.js';
 import type { Adapter, AdapterEvent, SerializedError } from './types/index.js';
 
@@ -26,7 +26,7 @@ export class AdapterRegistry {
 
   add(adapter: Adapter): void {
     if (this.#adapters.has(adapter.id)) {
-      throw new AQError(ErrorCodes.AdapterFailed, `adapter ${adapter.id} already registered`);
+      throw new UpNextError(ErrorCodes.AdapterFailed, `adapter ${adapter.id} already registered`);
     }
     validateAdapter(adapter);
     this.#adapters.set(adapter.id, adapter);

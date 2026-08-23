@@ -1,5 +1,5 @@
 {
-  "name": "@aq/demo",
+  "name": "@upnext/demo",
   "version": "0.0.1",
   "private": true,
   "description": "Audible end-to-end demo of the runtime driving a real backend.",
@@ -7,16 +7,16 @@
   "type": "module",
   "main": "./dist/src/cli.js",
   "dependencies": {
-    "@aq/adapter-local": "0.0.1",
-    "@aq/core": "0.0.1"
+    "@upnext/adapter-local": "0.0.1",
+    "@upnext/core": "0.0.1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tothienbao6a0/aq.git",
+    "url": "git+https://github.com/tothienbao6a0/upnext.git",
     "directory": "packages/demo"
   },
-  "homepage": "https://github.com/tothienbao6a0/aq#readme",
+  "homepage": "https://github.com/tothienbao6a0/upnext#readme",
   "bugs": {
-    "url": "https://github.com/tothienbao6a0/aq/issues"
+    "url": "https://github.com/tothienbao6a0/upnext/issues"
   }
 }
