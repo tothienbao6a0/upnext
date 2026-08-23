@@ -1,13 +1,13 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { defaultCapabilities } from '@upnext/core';
+import { defaultCapabilities } from 'upnext';
 import type {
   Adapter,
   AdapterEvent,
   Binding,
   Capabilities,
   MediaRef,
-} from '@upnext/core';
+} from 'upnext';
 import { Library, isAudioPath } from './library.js';
 import { detectPlayer, probeDurationMs, type PlayerSpec } from './players.js';
 

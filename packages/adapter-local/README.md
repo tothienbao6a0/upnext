@@ -1,15 +1,15 @@
-# @upnext/adapter-local
+# upnext-adapter-local
 
-Plays local and remote audio files for [`@upnext/core`](https://www.npmjs.com/package/@upnext/core),
+Plays local and remote audio files for [`upnext`](https://www.npmjs.com/package/upnext),
 by handing them to a command-line player.
 
 ```bash
-npm i @upnext/core @upnext/adapter-local
+npm i upnext upnext-adapter-local
 ```
 
 ```ts
-import { Runtime } from '@upnext/core';
-import { LocalAdapter } from '@upnext/adapter-local';
+import { Runtime } from 'upnext';
+import { LocalAdapter } from 'upnext-adapter-local';
 
 const runtime = new Runtime({
   adapters: [new LocalAdapter({ library: ['/Users/me/Music'] })],

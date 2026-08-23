@@ -50,7 +50,7 @@ depend on, so the bar for changing its shape is high, and there is usually a way
 to do what you need through the existing surface. If there is not, that is worth
 knowing about — it means the API is missing something.
 
-Anything in `@upnext/core/internal` is unsupported and will move.
+Anything in `upnext/internal` is unsupported and will move.
 
 ## Tests
 
