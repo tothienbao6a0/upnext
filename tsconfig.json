@@ -4,6 +4,7 @@
     { "path": "./packages/core" },
     { "path": "./packages/adapter-local" },
     { "path": "./packages/adapter-process" },
+    { "path": "./packages/adapter-spotify" },
     { "path": "./packages/demo" }
   ]
 }
