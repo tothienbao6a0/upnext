@@ -1,6 +1,6 @@
 {
   "name": "upnext-adapter-local",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Plays local and remote audio files through ffplay or afplay. The reference backend: no credentials, no network, no accounts.",
   "license": "Apache-2.0",
   "type": "module",
@@ -14,7 +14,7 @@
     "src"
   ],
   "dependencies": {
-    "upnext-core": "0.0.2"
+    "upnext-core": "0.0.3"
   },
   "repository": {
     "type": "git",

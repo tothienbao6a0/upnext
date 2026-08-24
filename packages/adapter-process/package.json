@@ -1,6 +1,6 @@
 {
   "name": "upnext-adapter-process",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Run an adapter as a subprocess speaking newline-delimited JSON, so backends can be written in any language.",
   "license": "Apache-2.0",
   "type": "module",
@@ -15,7 +15,7 @@
     "examples"
   ],
   "dependencies": {
-    "upnext-core": "0.0.2"
+    "upnext-core": "0.0.3"
   },
   "repository": {
     "type": "git",
