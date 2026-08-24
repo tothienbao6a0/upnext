@@ -1,10 +1,23 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/adapter-local" },
-    { "path": "./packages/adapter-process" },
-    { "path": "./packages/adapter-spotify" },
-    { "path": "./packages/demo" }
+    {
+      "path": "./packages/core"
+    },
+    {
+      "path": "./packages/adapter-local"
+    },
+    {
+      "path": "./packages/adapter-process"
+    },
+    {
+      "path": "./packages/adapter-spotify"
+    },
+    {
+      "path": "./packages/adapter-browser"
+    },
+    {
+      "path": "./packages/demo"
+    }
   ]
 }
