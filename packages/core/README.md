@@ -4,18 +4,24 @@
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/tothienbao6a0/upnext/blob/main/LICENSE)
 [![deps](https://img.shields.io/badge/dependencies-0-brightgreen)](https://www.npmjs.com/package/upnext-core)
 
-**One queue and one playback API over every audio source — built to be embedded in agent harnesses.**
+**One queue and one playback API over every audio source.**
 
 ```ts
-runtime.enqueue({ title: 'Bad Habit', artist: 'Steve Lacy' });  // → Spotify
-runtime.enqueue('https://example.com/interview.mp3');           // → a stream
-runtime.enqueue('file:///voice-memos/ruby.m4a');                // → local disk
-runtime.enqueue('something calmer after those');                // → your agent decides, later
+runtime.enqueue('spotify:track:1OWBh1eVxUdA1Z6UA8r4nh');  // → the Spotify app
+runtime.enqueue('https://example.com/interview.mp3');     // → a stream
+runtime.enqueue('file:///voice-memos/ruby.m4a');          // → local disk
+runtime.enqueue('something calmer after those');          // → resolved later, by you
 
 await runtime.play();
 ```
 
-Four sources. One queue. The agent never learns which is which.
+Four sources. One queue. The caller never learns which is which.
+
+**Shaped by the agentic age; not only for agents.** The design assumes what
+building software is like now: more than one thing writes to the queue, and
+nobody can afford a backend that lies about what it can do. Agent harnesses are
+the sharpest case — a desktop player, a kiosk or a car UI is a first-class user
+here too.
 
 ## The idea
 
@@ -24,7 +30,7 @@ Every audio integration today puts the queue in the wrong place.
 ```
    WITHOUT                                 WITH upnext
 
-   agent ──► Spotify API              agent ──► ┌───────────┐
+   caller ─► Spotify API             caller ─► ┌───────────┐
                  │                              │ THE QUEUE │ ← yours
                  ▼                              └─────┬─────┘
            ┌───────────────┐               ┌──────┬───┴───┬───────┐
@@ -78,7 +84,7 @@ the same as it returning the right thing.
   you own it completely  ◄─────────────────────────────►  someone else owns it
 
   local file                browser tab            Spotify desktop app
-  process exit = done       'ended' event          must be polled
+  process exit = done       'ended' event          must be watched
   nobody else touches it                           A HUMAN CAN HIT NEXT
 ```
 
@@ -89,7 +95,7 @@ if (runtime.can('seek')) await runtime.seek(30_000);
 Capabilities are published inline on playback state, so that's one call rather
 than a join against `adapterId`. `play: true` would be useless — every adapter
 can play. `endOfTrack`, `position` and `externalControl` are the flags that
-change what the runtime and the agent actually do.
+change what the runtime and the caller actually do.
 
 When a human *does* take over an external player, the default is that **the human
 wins** — their choice folds into the queue and playback carries on.
@@ -107,7 +113,27 @@ new Runtime({
 The entry stays unresolved until the playhead nears it, then calls the resolver
 **your host supplies**. The core never calls a model, never holds an API key,
 never picks a provider — that boundary is what makes this embeddable in someone
-else's harness.
+else's product.
+
+## The queue outlives the process, and the backends
+
+```ts
+runtime.setRepeat('all');    // 'off' | 'one' | 'all' — repeat-one still yields to next()
+runtime.setShuffle(true);    // a traversal order, not a re-ordering of your list
+
+const saved = runtime.serialize();            // plain JSON
+const { positionMs } = runtime.restore(saved); // replaces the queue, starts nothing
+```
+
+Repeat and shuffle live here rather than on an adapter because they are
+properties of *the queue*: Spotify has its own repeat button, so does Apple
+Music, and neither knows about the browser tab queued behind it.
+
+`restore` drops every binding, because a binding is a live handle to a backend
+session and none of that survives a restart. Each entry rebinds against the
+adapters that exist now — which is the payoff for describing media rather than
+locating it: a queue saved on a machine with Spotify reopens on one without it
+and still plays.
 
 ## Entry points
 
@@ -120,6 +146,7 @@ else's harness.
 ## Adapters
 
 - [`upnext-adapter-local`](https://www.npmjs.com/package/upnext-adapter-local) — files and streams via `ffplay`/`afplay`
+- [`upnext-adapter-spotify`](https://www.npmjs.com/package/upnext-adapter-spotify) — the Spotify desktop app (macOS, no credentials) or the Web API
 - [`upnext-adapter-process`](https://www.npmjs.com/package/upnext-adapter-process) — adapters in any language, over a pipe
 
 Writing one is small: `id`, `capabilities`, `match`, `resolve`, `load`, `play`,
