@@ -3,10 +3,12 @@
 Versions apply to all published packages together: `upnext-core`,
 `upnext-adapter-local`, `upnext-adapter-spotify`, `upnext-adapter-process`.
 
-## 0.0.3
+## 0.1.0
 
-Removing `nativeQueue` changes a published type, so the adapters cannot be
-consumed against `upnext-core@0.0.2` — every package moves to 0.0.3 together.
+**Breaking**, which is why this is a minor rather than a patch: `nativeQueue` is
+gone from the published `Capabilities` type, so an adapter with a capability
+literal will no longer compile. Every package moves together — an adapter built
+against the new shape cannot be consumed alongside `upnext-core@0.0.2`.
 
 ### Added
 
