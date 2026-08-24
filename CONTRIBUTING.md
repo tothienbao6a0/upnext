@@ -8,7 +8,7 @@ number of places it can send audio.
 
 ```bash
 npm install
-npm test        # 93 tests, runs in under a second
+npm test        # 192 tests, runs in under a second
 npm run demo    # plays actual audio, needs ffplay or afplay
 ```
 
@@ -18,10 +18,16 @@ nothing you have to adopt.
 
 ## Writing an adapter
 
-Start from `packages/adapter-local`, or from
-`packages/adapter-process/examples/python-adapter/adapter.py` if you would
-rather not write TypeScript. Adapters do not have to live in this repo, and they
-do not have to be in this language.
+Start from whichever existing one is closest to your backend:
+
+| | |
+|---|---|
+| `packages/adapter-local` | you fully own the player — a process, an `<audio>` element |
+| `packages/adapter-spotify` | somebody else's app that a human can also touch |
+| `packages/adapter-process/examples/python-adapter/adapter.py` | you would rather not write TypeScript |
+
+Adapters do not have to live in this repo, and they do not have to be in this
+language.
 
 Required: `id`, `capabilities`, `match`, `resolve`, `load`, `play`, `stop`.
 Everything else is optional and gated by what you declare.
@@ -37,6 +43,15 @@ then does not is broken.
 **`match` must be synchronous and cheap.** It runs on every resolution. If your
 adapter needs to look something up to know whether it can help, build the index
 in `init` — see `packages/adapter-local/src/library.ts`.
+
+**If a human can also touch your backend, say so.** `externalControl: true`
+means the runtime reconciles rather than assuming it is the only writer. It also
+means you own a decision the core cannot make: when the backend is suddenly
+playing something else, only you know whether your track just *ended* and the
+backend rolled on, or whether a person chose something. Answering that wrongly
+either makes the queue defer to autoplay after every song or overrules the
+listener. `packages/adapter-spotify/src/sampler.ts` is a worked example, kept
+pure so every branch of it is a plain test.
 
 **Return `null` from `resolve` rather than guessing.** The runtime will try the
 next source, which is almost always better than confidently playing the wrong
@@ -61,6 +76,12 @@ lets you configure a backend anywhere on the capability spectrum:
 ```ts
 new FakeAdapter({ capabilities: { endOfTrack: 'poll', position: 'authoritative' } });
 ```
+
+**Tests must not need your backend installed.** Inject whatever reaches the
+outside world — `adapter-spotify` takes its `osascript` and its `fetch` as
+options for exactly this reason, so its whole suite runs on Linux with no
+Spotify, no account and no network. CI has none of those things, and a test that
+only passes on your laptop is not protecting anyone.
 
 If you are fixing a bug, add the failing test first. Three of the bugs in this
 codebase were found by running `npm run demo` and listening, not by reading
