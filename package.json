@@ -2,7 +2,7 @@
   "name": "upnext-workspace",
   "private": true,
   "version": "0.0.0",
-  "description": "Source-agnostic media queue and playback runtime for agents.",
+  "description": "Source-agnostic media queue and playback runtime.",
   "license": "Apache-2.0",
   "workspaces": [
     "packages/*"
@@ -15,7 +15,7 @@
     "clean": "tsc --build --clean",
     "test": "npm run build && node --test packages/*/dist/test/*.test.js",
     "demo": "npm run build && node packages/demo/dist/src/cli.js",
-    "release": "npm run build && npm test && npm publish -w packages/core && npm publish -w packages/adapter-local && npm publish -w packages/adapter-process"
+    "release": "npm run build && npm test && npm publish -w packages/core && npm publish -w packages/adapter-local && npm publish -w packages/adapter-process && npm publish -w packages/adapter-spotify"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

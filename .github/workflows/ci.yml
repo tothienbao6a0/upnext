@@ -10,6 +10,11 @@ jobs:
     # Both matter: the local adapter and the Python example behave differently
     # depending on which player binaries exist, and macOS is the only place
     # afplay is exercised at all.
+    #
+    # The Spotify adapter deliberately needs neither. It drives a macOS app and
+    # a network API, and both are injected, so its whole suite runs on Linux
+    # with no Spotify, no account and no network — which is the point: a backend
+    # you cannot test without an account is a backend nobody will contribute to.
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
