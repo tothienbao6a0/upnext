@@ -42,4 +42,5 @@ export const ErrorCodes = {
   VersionConflict: 'version_conflict',
   AdapterFailed: 'adapter_failed',
   Timeout: 'timeout',
+  Disposed: 'disposed',
 } as const;
