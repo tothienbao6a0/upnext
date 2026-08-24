@@ -10,12 +10,6 @@
  */
 export interface Capabilities {
   /**
-   * Can the backend hold upcoming items itself, or must the runtime drive every
-   * transition? Native queues give gapless playback; driven transitions do not.
-   */
-  nativeQueue: boolean;
-
-  /**
    * How the runtime learns that a track finished.
    * - `event`: the adapter pushes. Accurate.
    * - `poll`: the runtime asks on an interval. Approximate.
@@ -46,7 +40,6 @@ export interface Capabilities {
 }
 
 export const defaultCapabilities: Capabilities = {
-  nativeQueue: false,
   endOfTrack: 'none',
   position: 'none',
   externalControl: false,

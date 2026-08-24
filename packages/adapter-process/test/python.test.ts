@@ -46,7 +46,7 @@ test('capabilities are discovered from the child at handshake', async () => {
 
   assert.equal(adapter.capabilities.endOfTrack, 'event');
   assert.equal(adapter.capabilities.position, 'estimated');
-  assert.equal(adapter.capabilities.nativeQueue, false, 'undeclared flags keep their defaults');
+  assert.equal(adapter.capabilities.seek, false, 'undeclared flags keep their defaults');
   await runtime.dispose();
 });
 
