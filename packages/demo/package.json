@@ -1,14 +1,14 @@
 {
   "name": "upnext-demo",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "private": true,
   "description": "Audible end-to-end demo of the runtime driving a real backend.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/src/cli.js",
   "dependencies": {
-    "upnext-adapter-local": "0.0.3",
-    "upnext-core": "0.0.3"
+    "upnext-adapter-local": "0.1.0",
+    "upnext-core": "0.1.0"
   },
   "repository": {
     "type": "git",
