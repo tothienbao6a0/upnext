@@ -1,4 +1,5 @@
 import { systemScheduler, type Scheduler } from './scheduler.js';
+import type { RepeatMode } from './selection.js';
 import type { Adapter, DesyncPolicy, IntentResolver } from './types/index.js';
 
 export interface RuntimeOptions {
@@ -26,6 +27,14 @@ export interface RuntimeOptions {
    * forever, which risks the queue stopping with no error and nothing playing.
    */
   timeoutMs?: number | null;
+  /** Where the queue starts on repeat/shuffle. Both changeable at runtime. */
+  repeat?: RepeatMode;
+  shuffle?: boolean;
+  /**
+   * Source of randomness for shuffle. Injected so a shuffle is reproducible in
+   * a test — one you cannot pin down is one you cannot debug.
+   */
+  random?: () => number;
   scheduler?: Scheduler;
 }
 
@@ -37,6 +46,9 @@ export interface ResolvedOptions {
   pollIntervalMs: number;
   positionIntervalMs: number;
   timeoutMs: number | null;
+  repeat: RepeatMode;
+  shuffle: boolean;
+  random: () => number;
   scheduler: Scheduler;
   resolveIntent: IntentResolver | undefined;
 }
@@ -50,6 +62,9 @@ export function resolveOptions(options: RuntimeOptions): ResolvedOptions {
     pollIntervalMs: options.pollIntervalMs ?? 1000,
     positionIntervalMs: options.positionIntervalMs ?? 1000,
     timeoutMs: options.timeoutMs === undefined ? 30_000 : options.timeoutMs,
+    repeat: options.repeat ?? 'off',
+    shuffle: options.shuffle ?? false,
+    random: options.random ?? Math.random,
     scheduler: options.scheduler ?? systemScheduler,
     resolveIntent: options.resolveIntent,
   };

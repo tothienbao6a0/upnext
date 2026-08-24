@@ -10,6 +10,7 @@ import { Prefetcher } from './prefetcher.js';
 import { Queue, createQueueView, type ReadonlyQueue } from './queue.js';
 import { AdapterRegistry } from './registry.js';
 import { planReconciliation } from './reconciler.js';
+import { selectNext, type RepeatMode } from './selection.js';
 import type {
   Adapter,
   AdapterEvent,
@@ -41,6 +42,9 @@ export interface AdapterSummary {
 
 export interface RuntimeSnapshot {
   version: number;
+  /** Whether the queue loops, and whether it picks in order. */
+  repeat: RepeatMode;
+  shuffle: boolean;
   playback: PlaybackState;
   nowPlaying: QueueItem | null;
   queue: QueueItem[];
@@ -87,11 +91,15 @@ export class Runtime {
   #flushScheduled = false;
   /** Depth of in-flight multi-step operations holding the announcement. */
   #batchDepth = 0;
+  #repeat: RepeatMode;
+  #shuffle: boolean;
   #disposed = false;
 
   constructor(options: RuntimeOptions = {}) {
     this.#opts = resolveOptions(options);
     this.#queueView = createQueueView(this.#queue);
+    this.#repeat = this.#opts.repeat;
+    this.#shuffle = this.#opts.shuffle;
 
     this.#registry = new AdapterRegistry({
       onEvent: (adapter, event) => this.#onAdapterEvent(adapter, event),
@@ -199,9 +207,36 @@ export class Runtime {
     return this.#deck.can(capability);
   }
 
+  /**
+   * Loop the queue, or one track, or neither.
+   *
+   * A property of the queue rather than of any backend. Spotify has its own
+   * repeat button and so does Apple Music, but neither knows about the browser
+   * tab queued behind it — above all of them is the only place the question can
+   * be answered once.
+   */
+  setRepeat(mode: RepeatMode): void {
+    this.#repeat = mode;
+  }
+
+  /** Play what is left in a random order rather than in queue order. */
+  setShuffle(on: boolean): void {
+    this.#shuffle = on;
+  }
+
+  get repeat(): RepeatMode {
+    return this.#repeat;
+  }
+
+  get shuffle(): boolean {
+    return this.#shuffle;
+  }
+
   getState(): RuntimeSnapshot {
     return {
       version: this.#queue.version,
+      repeat: this.#repeat,
+      shuffle: this.#shuffle,
       playback: this.#deck.state,
       nowPlaying: this.nowPlaying(),
       queue: this.#queue.list(),
@@ -235,6 +270,7 @@ export class Runtime {
   // -- queue mutation -------------------------------------------------------
 
   enqueue(input: EnqueueInput, position: Position = {}): QueueItem {
+    this.#assertUsable();
     const inserted = this.#queue.insert(this.#newItem(input), position);
     this.#emitQueue();
     this.#prefetcher.pump();
@@ -242,6 +278,7 @@ export class Runtime {
   }
 
   enqueueMany(inputs: EnqueueInput[], position: Position = {}): QueueItem[] {
+    this.#assertUsable();
     const out: QueueItem[] = [];
     let anchor = position;
     for (const input of inputs) {
@@ -255,6 +292,7 @@ export class Runtime {
   }
 
   move(id: string, position: Position, expectVersion?: number): void {
+    this.#assertUsable();
     this.#checkVersion(expectVersion);
     this.#queue.move(id, position);
     this.#emitQueue();
@@ -262,6 +300,7 @@ export class Runtime {
   }
 
   remove(id: string, expectVersion?: number): void {
+    this.#assertUsable();
     this.#checkVersion(expectVersion);
     const wasActive = this.#deck.itemId === id;
     this.#prefetcher.cancel(id);
@@ -272,6 +311,7 @@ export class Runtime {
   }
 
   clear(opts: { keepActive?: boolean } = {}): void {
+    this.#assertUsable();
     this.#queue.clear(opts);
     this.#emitQueue();
   }
@@ -453,9 +493,32 @@ export class Runtime {
       this.#emitter.emit('item:ended', { item: this.#queue.require(fromId), reason });
     }
 
-    const next = this.#queue.nextPlayable(fromId);
-    if (!next) return this.#halt('ended');
-    await this.#start(next);
+    const plan = selectNext(
+      this.#queueView,
+      fromId,
+      { repeat: this.#repeat, shuffle: this.#shuffle },
+      this.#opts.random,
+    );
+
+    if (plan.kind === 'stop') return this.#halt('ended');
+
+    if (plan.kind === 'restart') {
+      // The queue wrapped. Everything that already played becomes eligible
+      // again, otherwise `nextPlayable` would find nothing on the second lap.
+      for (const item of this.#queue.list()) {
+        if (item.status === 'ended' || item.status === 'skipped') {
+          this.#queue.update(item.id, { status: item.binding ? 'ready' : 'unresolved' });
+        }
+      }
+      this.#queue.cursorId = null;
+      this.#emitQueue();
+    }
+
+    if (plan.kind === 'replay') {
+      this.#queue.update(plan.id, { status: this.#queue.get(plan.id)?.binding ? 'ready' : 'unresolved' });
+    }
+
+    await this.#start(this.#queue.require(plan.id));
   }
 
   /** A dead entry must never stall the queue. Move on. */
@@ -610,6 +673,17 @@ export class Runtime {
     this.#queue.update(itemId, { status: 'failed', error });
     this.#emitQueue();
     this.#emitter.emit('item:failed', { item: this.#queue.require(itemId), error });
+  }
+
+  /**
+   * A disposed runtime has stopped its backends and dropped its subscribers, so
+   * a mutation after that point changes a queue nobody will ever hear. Saying
+   * so is kinder than accepting the write and going quiet.
+   */
+  #assertUsable(): void {
+    if (this.#disposed) {
+      throw new UpNextError(ErrorCodes.Disposed, 'this runtime has been disposed');
+    }
   }
 
   #checkVersion(expected?: number): void {
