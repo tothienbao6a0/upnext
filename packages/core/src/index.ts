@@ -28,3 +28,5 @@ export { describe as describeRef, looksLikeLocator } from './input.js';
 // Time, so a host can test its own code deterministically.
 export { ManualScheduler, systemScheduler, type Scheduler } from './scheduler.js';
 export type { RepeatMode } from './selection.js';
+export type { PersistedState } from './persistence.js';
+export { PERSISTENCE_VERSION } from './persistence.js';

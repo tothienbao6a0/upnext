@@ -10,6 +10,7 @@ import { Prefetcher } from './prefetcher.js';
 import { Queue, createQueueView, type ReadonlyQueue } from './queue.js';
 import { AdapterRegistry } from './registry.js';
 import { planReconciliation } from './reconciler.js';
+import { planRestore, serializeState, type PersistedState } from './persistence.js';
 import { selectNext, type RepeatMode } from './selection.js';
 import type {
   Adapter,
@@ -230,6 +231,54 @@ export class Runtime {
 
   get shuffle(): boolean {
     return this.#shuffle;
+  }
+
+  /**
+   * Everything needed to reopen this queue later, as plain JSON.
+   *
+   * Write it wherever you keep state; hand it back to `restore`. The playhead
+   * position rides along so a host can seek back to it after starting.
+   */
+  serialize(): PersistedState {
+    return serializeState({
+      queue: this.#queue.list(),
+      cursorId: this.#queue.cursorId,
+      repeat: this.#repeat,
+      shuffle: this.#shuffle,
+      positionMs: this.#deck.state.positionMs,
+      volume: this.#deck.state.volume,
+    });
+  }
+
+  /**
+   * Reload a serialized queue, replacing whatever is here now.
+   *
+   * Nothing starts playing — the host decides that, and can `seek` to the
+   * returned `positionMs` first if it wants to pick up mid-track. Live bindings
+   * are deliberately dropped and every entry rebinds against the adapters that
+   * exist *now*, so a queue saved on a machine with Spotify reopens on one
+   * without it and still plays from somewhere else.
+   */
+  restore(state: unknown): { positionMs: number } {
+    this.#assertUsable();
+    const plan = planRestore(state);
+
+    void this.stop();
+    this.#queue.clear({ keepActive: false });
+    for (const item of plan.items) this.#queue.insert(item);
+    this.#queue.cursorId = plan.cursorId;
+
+    // Past the highest restored id, or a new entry would collide with an old
+    // one and every id-addressed call would hit whichever `find` reached first.
+    this.#nextId = createIdFactory('q', plan.highestId);
+
+    this.#repeat = plan.repeat;
+    this.#shuffle = plan.shuffle;
+    if (plan.volume !== null) this.#deck.patch({ volume: plan.volume });
+
+    this.#emitQueue();
+    this.#prefetcher.pump();
+    return { positionMs: plan.positionMs };
   }
 
   getState(): RuntimeSnapshot {

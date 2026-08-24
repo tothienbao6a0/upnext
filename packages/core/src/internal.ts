@@ -21,6 +21,7 @@ export type { RegistryHandlers } from './registry.js';
 export { PositionTracker } from './position.js';
 export { planReconciliation } from './reconciler.js';
 export { selectNext } from './selection.js';
+export { planRestore, serializeState } from './persistence.js';
 export type { NextPlan, SelectionState } from './selection.js';
 export type { ReconcilePlan, ReconcileAction } from './reconciler.js';
 export { Emitter } from './emitter.js';
