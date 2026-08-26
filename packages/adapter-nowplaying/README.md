@@ -117,8 +117,4 @@ bending.
 
 ---
 
-Credit where it's due: the approach, the JXA scripts and the "is this actually
-media" filter come from the author's own desktop agent, where they run in
-production.
-
 Full docs: **https://github.com/tothienbao6a0/upnext** · Apache-2.0

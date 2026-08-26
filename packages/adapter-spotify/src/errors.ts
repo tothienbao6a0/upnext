@@ -7,10 +7,9 @@
  * apart either nags for a re-login when the real problem is a sleeping phone,
  * or silently retries forever when the real problem is a login.
  *
- * The shape and the coarseness are lifted from the same classification in the
- * user's superapp (`spotify-service.ts`), for the reason given there: the exact
- * wording of an upstream error is not a contract and will drift, so this keys
- * off the few stable signals and buckets everything else as `failed`.
+ * Deliberately coarse: the exact wording of an upstream error is not a contract
+ * and will drift, so this keys off the few stable signals and buckets everything
+ * else as `failed`.
  */
 export type SpotifyFailure =
   /** No usable session. The host must get a fresh token, or the user must log in. */
@@ -93,9 +92,9 @@ export function errorMessage(body: unknown, fallback: string): string {
  * The same classification against free text, for the backend that has no status
  * codes — osascript writes prose to stderr and nothing else.
  *
- * Ported from superapp's `classify`, including the ordering: rate limiting is
- * tested first because a throttling message can contain the word "user" and
- * must not be mistaken for the auth case below it.
+ * The ordering matters: rate limiting is tested first because a throttling
+ * message can contain the word "user" and must not be mistaken for the auth
+ * case below it.
  */
 export function classifyText(text: string): SpotifyFailure {
   const lower = text.toLowerCase();

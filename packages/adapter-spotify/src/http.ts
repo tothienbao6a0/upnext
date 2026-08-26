@@ -42,9 +42,8 @@ export interface RequestOptions {
  * **Concurrency.** Lookahead resolves several entries at once, so several calls
  * can hit a 401 together. Without the single-flight below they would each fetch
  * a token, which at best wastes refreshes and at worst trips the host's own
- * rate limit at the exact moment everything is already failing. The pattern is
- * from superapp's `SpotifyService.importing`, for the same reason: a second
- * caller should adopt the first's work rather than start its own.
+ * rate limit at the exact moment everything is already failing. A second caller
+ * should adopt the first's work rather than start its own.
  */
 export class SpotifyHttp {
   #getAccessToken: TokenProvider;

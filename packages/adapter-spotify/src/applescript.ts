@@ -11,9 +11,6 @@ import { parseSpotifyUri, toSpotifyUri } from './uri.js';
  * exactly the part a type checker cannot see. Keeping the parser pure means the
  * wire format has real tests on a machine with no Spotify, no macOS and no
  * network, which is where this package's CI runs.
- *
- * This split, and the `is running` guard below, are taken from the same
- * treatment in the user's superapp (`now-playing.ts`).
  */
 
 /** ASCII unit separator. Written as an escape because the character is

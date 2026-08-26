@@ -22,9 +22,9 @@ import { toSpotifyUri, type SpotifyId } from './uri.js';
  * needs, and a host that would rather not reach the network at all passes
  * `lookup: null`. Nothing about whether a track *plays* runs through here.
  *
- * The mechanism, the `__NEXT_DATA__` walk and the cover-picking are adapted
- * from the user's superapp (`spotify-queue.ts`), which uses it for the same
- * reason — its queue source also returns ids with the names stripped out.
+ * The `__NEXT_DATA__` walk and the cover-picking exist because the queue source
+ * returns ids with the names stripped out, and a queue showing raw URIs until
+ * each entry starts is useless for the one thing a queue is for.
  */
 export type TrackLookup = (id: SpotifyId) => Promise<Partial<MediaRef>>;
 

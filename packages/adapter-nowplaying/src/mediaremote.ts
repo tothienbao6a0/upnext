@@ -21,9 +21,6 @@ import { parseReading, type NowPlayingReading } from './reading.js';
  *
  * Every failure answers null rather than throwing, so the day Apple closes this
  * the adapter reports itself unavailable and the rest of the queue carries on.
- *
- * The approach, the script, and the reasoning are taken from the user's own
- * superapp, where they are in production.
  */
 
 const FRAMEWORK = '/System/Library/PrivateFrameworks/MediaRemote.framework/';
