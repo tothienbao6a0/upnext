@@ -55,6 +55,7 @@ machine with Spotify reopens on one without it, then plays from somewhere else.
 | **`upnext-adapter-spotify`** | the Spotify **desktop app** on macOS with no credentials, or the **Web API** with a token you hold |
 | **`upnext-adapter-browser`** | any media element you control — browser, Electron renderer, webview, across a process boundary |
 | **`upnext-adapter-local`** | local files and streams via `ffplay`/`afplay` |
+| **`upnext-adapter-apple-music`** | your Apple Music library through the **Music app** — no credentials, **and it can search** |
 | **`upnext-adapter-nowplaying`** | whatever **macOS** is already playing, whichever app is playing it |
 | **`upnext-adapter-process`** | an adapter written in any language, over a pipe |
 | **`upnext-desktop`** | all of the above wired for you, in one call — plus the `upnext` CLI |
@@ -71,6 +72,7 @@ The point of the capability model is that these differ, and say so:
 | **local** (afplay) | ✅ | `event` | estimated | ❌ | ✅ | ❌ | ✅¹ | no |
 | **spotify** desktop | ✅ | `event` | exact | ✅ | ✅ | ✅ | ❌² | **yes** |
 | **spotify** web | ✅ | `event` | exact | ✅ | ✅ | ✅ | ✅ | **yes** |
+| **apple music** | ✅ | `poll` | exact | ✅ | ✅ | ✅ | **✅** | **yes** |
 | **nowplaying** | ❌³ | `poll` | exact | ❌ | ✅ | ❌ | ❌ | **yes** |
 
 ¹ only when you point it at a music folder to index · ² the AppleScript
@@ -313,8 +315,10 @@ and confidently playing the wrong song is the classic cross-source failure.
 > title rather than guessing. On a default Mac setup that means nothing resolves
 > `{ title: 'Bad Habit' }`.
 >
-> Fix it by indexing a music folder, adding a Spotify Web token, or supplying
-> `resolveIntent` and answering it yourself. `upnext-desktop`'s `explainSetup()`
+> On a Mac this is now answered for you: `upnext-adapter-apple-music` searches
+> your library and needs no credentials at all, so a plain title resolves out of
+> the box. Elsewhere, index a music folder, add a Spotify Web token, or supply
+> `resolveIntent` and answer it yourself. `upnext-desktop`'s `explainSetup()`
 > and `upnext doctor` both say which of those you have — this is a real gap and
 > it is better named than discovered.
 
@@ -634,11 +638,6 @@ Each has a regression test. If you touch playback, run `npm run demo` and listen
 <a name="not-built-yet"></a>
 
 **Not built yet:**
-
-- **Apple Music.** Reachable the same way the Spotify desktop adapter is, through
-  its AppleScript dictionary, and the obvious next one to write. (It is already
-  *reachable* today via `upnext-adapter-nowplaying`, but only as "whatever is
-  playing" — not as something you can hand a track to.)
 
 - **Windows and Linux equivalents of Now Playing.** Both have one — SMTC on
   Windows, MPRIS on Linux — and the adapter's shape would carry over. Only macOS
