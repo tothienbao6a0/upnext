@@ -5,48 +5,83 @@
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![deps](https://img.shields.io/badge/dependencies-0-brightgreen)](./packages/core/package.json)
 
-**One queue and one playback API over every audio source.**
+**One queue over every audio source — including the ones you don't control.**
 
-Not a music player. Not an MCP server. A library your product imports so that
-whatever is driving — a model, a person clicking, a script — can control audio
-without knowing whether the sound is coming from Spotify, a browser tab, a
-podcast feed, or a file on disk.
+A library your product imports so that whatever is driving — a model, a person
+clicking, a script — can control audio without knowing whether the sound is
+coming from Spotify, a browser tab, a podcast feed, or a file on disk.
 
 ```ts
-runtime.enqueue('spotify:track:1OWBh1eVxUdA1Z6UA8r4nh');  // → the Spotify app
-runtime.enqueue('https://example.com/interview.mp3');     // → a stream
-runtime.enqueue('file:///voice-memos/ruby.m4a');          // → local disk
-runtime.enqueue('something calmer after those');          // → resolved later, by you
+const runtime = new Runtime({ adapters: [spotify, browser, local, nowPlaying] });
+
+runtime.enqueue(NOW_PLAYING_URI);                         // the podcast already
+                                                          // playing in their browser
+runtime.enqueue('spotify:track:1OWBh1eVxUdA1Z6UA8r4nh');  // then a Spotify track
+runtime.enqueue('https://example.com/episode.mp3');       // then a file on the web
+runtime.enqueue('something calmer after those');          // then whatever you decide, later
 
 await runtime.play();
 ```
 
-Four different sources. One queue. The caller never learns which is which.
+Four sources, one list, in order. The first one is playing inside an app you do
+not own — and the queue waits for it to finish before taking over.
 
-### It's shaped by the agentic age. It isn't only for agents.
+### What you get
 
-The design assumes the conditions software is actually built under now: **more
-than one thing writes to the queue**, and **nobody can afford a backend that lies
-about what it can do**. That's why mutation is addressed by stable id instead of
-by index, why capabilities are a spectrum instead of `play: true`, and why
-failure is structured data instead of silence.
+**Add audio to your product without marrying one service.** Write against one
+queue; swap or add backends later. An entry describes *what to play*, not *where
+from*, so it can bind to whichever source is available at the moment it plays.
 
-Those are agent-ready properties. They're also just what "correct" looks like
-when a human and a program share a speaker. Agent harnesses are the sharpest case
-and the hero example throughout this README — but a desktop player, a kiosk, a car
-UI or a home-audio box is a first-class user here, not a bystander.
+**Join what someone is already listening to instead of talking over it.** The
+machine's current playback — a YouTube tab, a podcast in Safari, VLC — can be a
+queue entry like any other. Your track starts when theirs ends.
+
+**Know what you can do before you try it.** `runtime.can('seek')` answers for the
+backend that is actually loaded. No silent no-ops, no discovering at 2am that
+one source quietly ignored a command.
+
+**Keep playing when a source fails.** If a backend cannot load an entry, the same
+description is handed to the next one that can. A queue does not stop because
+one service is down.
+
+**Survive a restart.** `serialize()` / `restore()` — and a queue saved on a
+machine with Spotify reopens on one without it, then plays from somewhere else.
 
 ### What ships today
 
-| package | status |
+| package | plays |
 |---|---|
-| **`upnext-core`** | the queue, state machine, capability model, events. Zero dependencies, no I/O. |
-| **`upnext-adapter-local`** | files and streams via `ffplay`/`afplay`. No credentials. |
-| **`upnext-adapter-spotify`** | the Spotify **desktop app** on macOS with no credentials at all, or the **Web API** with a token you already hold. |
-| **`upnext-adapter-process`** | adapters as subprocesses, in any language. |
+| **`upnext-core`** | nothing — the queue, state machine, capability model and events. Zero dependencies, no I/O. |
+| **`upnext-adapter-spotify`** | the Spotify **desktop app** on macOS with no credentials, or the **Web API** with a token you hold |
+| **`upnext-adapter-browser`** | any media element you control — browser, Electron renderer, webview, across a process boundary |
+| **`upnext-adapter-local`** | local files and streams via `ffplay`/`afplay` |
+| **`upnext-adapter-nowplaying`** | whatever **macOS** is already playing, whichever app is playing it |
+| **`upnext-adapter-process`** | an adapter written in any language, over a pipe |
 
-**Not built yet:** Apple Music, a browser-tab adapter, gapless handoff into a
-native queue, and MCP/CLI/HTTP transports. Details at the [bottom](#not-built-yet).
+### What each one can actually do
+
+The point of the capability model is that these differ, and say so:
+
+| | starts tracks | end of track | position | seek | pause | volume | search | someone else can change it |
+|---|:---:|---|---|:---:|:---:|:---:|:---:|:---:|
+| **browser** | ✅ | `event` | exact | ✅ | ✅ | ✅ | ❌ | no |
+| **local** (ffplay) | ✅ | `event` | estimated | ✅ | ✅ | ❌ | ✅¹ | no |
+| **local** (afplay) | ✅ | `event` | estimated | ❌ | ✅ | ❌ | ✅¹ | no |
+| **spotify** desktop | ✅ | `event` | exact | ✅ | ✅ | ✅ | ❌² | **yes** |
+| **spotify** web | ✅ | `event` | exact | ✅ | ✅ | ✅ | ✅ | **yes** |
+| **nowplaying** | ❌³ | `poll` | exact | ❌ | ✅ | ❌ | ❌ | **yes** |
+
+¹ only when you point it at a music folder to index · ² the AppleScript
+dictionary cannot search a catalogue · ³ there is no way to ask macOS's Now
+Playing register to start a specific track
+
+Every ❌ there is a refusal rather than a silent failure. An adapter that claims
+it can seek and then doesn't is a bug you chase for an hour; these tell you
+first, and the runtime routes around them.
+
+**Not built yet:** Apple Music, gapless handoff into a native queue, controlling
+a *specific* browser tab (needs an extension), and MCP/CLI/HTTP transports.
+Details at the [bottom](#not-built-yet).
 
 ---
 
@@ -154,10 +189,12 @@ npm install && npm run demo    # synthesizes its own tones and plays them
    │  └──────────┘  └──────────────┘  └────────────────┘     │
    └────────────────────────────┬────────────────────────────┘
                                 │  Adapter interface
-        ┌───────────────┬───────┴───────┬───────────────┐
-        ▼               ▼               ▼               ▼
-   local files      Spotify        Spotify          anything
-                  desktop app      Web API         you write
+    ┌──────────┬──────────┬────────┴───┬──────────┬──────────┐
+    ▼          ▼          ▼            ▼          ▼          ▼
+ Spotify    Spotify    a media      local     whatever    anything
+ desktop    Web API     element     files      is on      you write
+                     (browser /              (macOS Now
+                      Electron)               Playing)
 ```
 
 ### The life of one queue entry
@@ -536,7 +573,7 @@ and no flakes.
 ## Status
 
 Early, but the core, the capability model and the adapter contract are real and
-tested. **192 tests**, CI on Node 20/22 across Linux and macOS.
+tested. **238 tests**, CI on Node 20/22 across Linux and macOS.
 
 Several bugs in this design were found by running the demo *out loud* rather than
 by reading code — a doubled end-of-track event, a late prefetch overwriting the
@@ -548,8 +585,18 @@ Each has a regression test. If you touch playback, run `npm run demo` and listen
 **Not built yet:**
 
 - **Apple Music.** Reachable the same way the Spotify desktop adapter is, through
-  its AppleScript dictionary, and the obvious next one to write.
-- **Browser adapter for existing tabs.** Needs an extension or CDP.
+  its AppleScript dictionary, and the obvious next one to write. (It is already
+  *reachable* today via `upnext-adapter-nowplaying`, but only as "whatever is
+  playing" — not as something you can hand a track to.)
+
+- **Windows and Linux equivalents of Now Playing.** Both have one — SMTC on
+  Windows, MPRIS on Linux — and the adapter's shape would carry over. Only macOS
+  is implemented.
+- **Controlling one *specific* browser tab.** `upnext-adapter-nowplaying` already
+  reaches whatever the machine is playing, browser included, through macOS's
+  system Now Playing register — no extension needed. Singling out *one* tab among
+  several, though, does need a browser extension, and that is a control feature
+  rather than a queue one: you cannot queue into a tab you do not own.
 - **Gapless handoff into a native queue.** Same-backend transitions have a small
   gap, because the runtime drives every one of them. (There *was* a `nativeQueue`
   capability describing this. It was declared, defaulted, and read by nothing —

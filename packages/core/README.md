@@ -145,8 +145,10 @@ and still plays.
 
 ## Adapters
 
-- [`upnext-adapter-local`](https://www.npmjs.com/package/upnext-adapter-local) — files and streams via `ffplay`/`afplay`
 - [`upnext-adapter-spotify`](https://www.npmjs.com/package/upnext-adapter-spotify) — the Spotify desktop app (macOS, no credentials) or the Web API
+- [`upnext-adapter-browser`](https://www.npmjs.com/package/upnext-adapter-browser) — any media element you control, including across a process boundary
+- [`upnext-adapter-local`](https://www.npmjs.com/package/upnext-adapter-local) — local files and streams via `ffplay`/`afplay`
+- [`upnext-adapter-nowplaying`](https://www.npmjs.com/package/upnext-adapter-nowplaying) — whatever macOS is already playing, whichever app is playing it
 - [`upnext-adapter-process`](https://www.npmjs.com/package/upnext-adapter-process) — adapters in any language, over a pipe
 
 Writing one is small: `id`, `capabilities`, `match`, `resolve`, `load`, `play`,
