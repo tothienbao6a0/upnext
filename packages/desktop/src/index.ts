@@ -3,6 +3,7 @@ import { LocalAdapter } from 'upnext-adapter-local';
 import { MediaElementAdapter, type MediaElementLike } from 'upnext-adapter-browser';
 import { NowPlayingAdapter } from 'upnext-adapter-nowplaying';
 import { SpotifyDesktopAdapter, SpotifyWebAdapter } from 'upnext-adapter-spotify';
+import { AppleMusicAdapter } from 'upnext-adapter-apple-music';
 
 export interface DesktopOptions extends Omit<RuntimeOptions, 'adapters'> {
   /**
@@ -44,6 +45,10 @@ export async function desktop(options: DesktopOptions = {}): Promise<Runtime> {
     // credentials and no network — but behind it for *resolution*, which it
     // cannot do at all. The binder sorts that out per entry.
     adapters.push(new SpotifyDesktopAdapter());
+    // Ahead of Now Playing, and the only zero-credential source here that can
+    // resolve a plain title — which is what makes `enqueue({ title })` work on
+    // a Mac with nothing configured.
+    adapters.push(new AppleMusicAdapter());
     adapters.push(new NowPlayingAdapter());
   }
 

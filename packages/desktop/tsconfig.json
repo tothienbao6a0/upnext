@@ -1,9 +1,31 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "outDir": "dist", "rootDir": "." },
-  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts"
+  ],
   "references": [
-    { "path": "../core" }, { "path": "../adapter-local" }, { "path": "../adapter-spotify" },
-    { "path": "../adapter-browser" }, { "path": "../adapter-nowplaying" }
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../adapter-local"
+    },
+    {
+      "path": "../adapter-spotify"
+    },
+    {
+      "path": "../adapter-browser"
+    },
+    {
+      "path": "../adapter-nowplaying"
+    },
+    {
+      "path": "../adapter-apple-music"
+    }
   ]
 }
