@@ -1,0 +1,22 @@
+{
+  "name": "upnext-adapter-nowplaying",
+  "version": "0.1.0",
+  "description": "Read and control whatever macOS is playing — a browser tab, VLC, Doppler, anything that publishes to Control Center.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": { ".": "./dist/src/index.js" },
+  "files": ["dist/src", "src"],
+  "dependencies": { "upnext-core": "0.1.0" },
+  "engines": { "node": ">=20" },
+  "os": ["darwin"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tothienbao6a0/upnext.git",
+    "directory": "packages/adapter-nowplaying"
+  },
+  "homepage": "https://github.com/tothienbao6a0/upnext#readme",
+  "bugs": { "url": "https://github.com/tothienbao6a0/upnext/issues" },
+  "keywords": ["audio", "macos", "now-playing", "mediaremote", "control-center", "upnext-adapter"]
+}
