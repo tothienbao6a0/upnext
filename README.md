@@ -58,6 +58,7 @@ machine with Spotify reopens on one without it, then plays from somewhere else.
 | **`upnext-adapter-nowplaying`** | whatever **macOS** is already playing, whichever app is playing it |
 | **`upnext-adapter-process`** | an adapter written in any language, over a pipe |
 | **`upnext-desktop`** | all of the above wired for you, in one call — plus the `upnext` CLI |
+| **`upnext-mcp`** | the same, as an MCP server any agent can use |
 
 ### What each one can actually do
 
@@ -141,6 +142,16 @@ $ upnext now
 ```
 
 That is a YouTube tab, read with no browser extension.
+
+### Or give it to an agent
+
+```json
+{ "mcpServers": { "upnext": { "command": "npx", "args": ["-y", "upnext-mcp"] } } }
+```
+
+Twelve tools in Claude Desktop, Cursor or anything else that speaks MCP —
+including `media_adopt_current`, which puts what someone is already listening to
+into the queue so the agent adds to it rather than talking over it.
 
 ### Or wire it yourself
 
@@ -643,8 +654,9 @@ Each has a regression test. If you touch playback, run `npm run demo` and listen
   not even the validator — so it was removed rather than left as decoration in a
   contract whose whole claim is that capabilities are honest. It comes back in a
   minor version if the handoff does.)
-- **MCP / CLI / HTTP transports.** Thin adapters *on top of* the core, in
-  separate packages, so nobody inherits a transport opinion.
+- **An HTTP transport.** MCP and a CLI both ship now (`upnext-mcp`,
+  `upnext-desktop`); HTTP would follow the same shape — a thin package on top of
+  the core, so nobody importing the runtime inherits a transport opinion.
 
 ---
 

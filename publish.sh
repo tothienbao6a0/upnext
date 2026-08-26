@@ -7,7 +7,7 @@
 set -uo pipefail
 OTP="$1"
 cd "$(dirname "$0")"
-PACKAGES=(core adapter-local adapter-process adapter-spotify adapter-browser adapter-nowplaying desktop)
+PACKAGES=(core adapter-local adapter-process adapter-spotify adapter-browser adapter-nowplaying desktop mcp)
 FAILED=()
 
 for p in "${PACKAGES[@]}"; do
