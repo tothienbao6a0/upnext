@@ -20,6 +20,9 @@
       "path": "./packages/adapter-nowplaying"
     },
     {
+      "path": "./packages/desktop"
+    },
+    {
       "path": "./packages/demo"
     }
   ]

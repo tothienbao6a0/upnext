@@ -57,6 +57,7 @@ machine with Spotify reopens on one without it, then plays from somewhere else.
 | **`upnext-adapter-local`** | local files and streams via `ffplay`/`afplay` |
 | **`upnext-adapter-nowplaying`** | whatever **macOS** is already playing, whichever app is playing it |
 | **`upnext-adapter-process`** | an adapter written in any language, over a pipe |
+| **`upnext-desktop`** | all of the above wired for you, in one call — plus the `upnext` CLI |
 
 ### What each one can actually do
 
@@ -115,6 +116,33 @@ places to send *one item at a time*.
 ---
 
 ## Quickstart
+
+The fast way — every source this machine can reach, one call:
+
+```bash
+npm i upnext-desktop
+```
+
+```ts
+import { desktop } from 'upnext-desktop';
+
+const audio = await desktop();
+audio.enqueue('spotify:track:1OWBh1eVxUdA1Z6UA8r4nh');
+audio.enqueue('https://example.com/podcast.mp3');
+await audio.play();
+```
+
+It ships a CLI too:
+
+```
+$ upnext now
+▶ Korea's STRANGEST Food is on Jeju Island!! — More Best Ever Food Review Show
+  Google Chrome · 23:20 / 24:11
+```
+
+That is a YouTube tab, read with no browser extension.
+
+### Or wire it yourself
 
 ```bash
 npm i upnext-core upnext-adapter-local
@@ -266,6 +294,18 @@ Strong external ids (ISRC, MusicBrainz) are the join key; normalized title and
 artist are the fallback. **Resolutions are verified before they play** — an
 adapter returning *something* is not the same as it returning the right thing,
 and confidently playing the wrong song is the classic cross-source failure.
+
+> **A title needs a backend that can search.** A link says exactly what to play;
+> a title has to be looked up, and not every backend can look things up. The
+> Spotify *desktop* app is the sharp case — it plays a URI you hand it, but its
+> AppleScript dictionary cannot search a catalogue, so it scores **0** for a bare
+> title rather than guessing. On a default Mac setup that means nothing resolves
+> `{ title: 'Bad Habit' }`.
+>
+> Fix it by indexing a music folder, adding a Spotify Web token, or supplying
+> `resolveIntent` and answering it yourself. `upnext-desktop`'s `explainSetup()`
+> and `upnext doctor` both say which of those you have — this is a real gap and
+> it is better named than discovered.
 
 ### 2. Capabilities describe what a backend actually *is*
 
