@@ -17,6 +17,9 @@
       "path": "./packages/adapter-browser"
     },
     {
+      "path": "./packages/adapter-nowplaying"
+    },
+    {
       "path": "./packages/demo"
     }
   ]
