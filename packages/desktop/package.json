@@ -1,0 +1,28 @@
+{
+  "name": "upnext-desktop",
+  "version": "0.1.0",
+  "description": "Batteries-included upnext for a desktop: one call wires every source this machine can reach, plus a CLI.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": { ".": "./dist/src/index.js" },
+  "bin": { "upnext": "./dist/src/cli.js" },
+  "files": ["dist/src", "src"],
+  "dependencies": {
+    "upnext-core": "0.1.0",
+    "upnext-adapter-local": "0.1.0",
+    "upnext-adapter-spotify": "0.1.0",
+    "upnext-adapter-browser": "0.1.0",
+    "upnext-adapter-nowplaying": "0.1.0"
+  },
+  "engines": { "node": ">=20" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tothienbao6a0/upnext.git",
+    "directory": "packages/desktop"
+  },
+  "homepage": "https://github.com/tothienbao6a0/upnext#readme",
+  "bugs": { "url": "https://github.com/tothienbao6a0/upnext/issues" },
+  "keywords": ["audio", "queue", "desktop", "cli", "spotify", "now-playing", "upnext"]
+}
