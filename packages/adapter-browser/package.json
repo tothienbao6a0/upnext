@@ -1,7 +1,7 @@
 {
   "name": "upnext-adapter-browser",
-  "version": "0.2.0",
-  "description": "Play audio through a media element you control \u2014 in a browser, an Electron renderer, or a webview. Works across a process boundary too.",
+  "version": "0.3.0",
+  "description": "Play audio through a media element you control — in a browser, an Electron renderer, or a webview. Works across a process boundary too.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/src/index.js",
@@ -15,7 +15,7 @@
     "src"
   ],
   "dependencies": {
-    "upnext-core": "0.2.0"
+    "upnext-core": "0.3.0"
   },
   "engines": {
     "node": ">=20"

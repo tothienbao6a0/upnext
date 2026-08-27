@@ -1,6 +1,6 @@
 {
   "name": "upnext-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "An MCP server for your machine's audio: one queue across Spotify, the browser, local files and whatever is already playing.",
   "license": "Apache-2.0",
   "type": "module",
@@ -19,8 +19,8 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
-    "upnext-desktop": "0.2.0",
-    "upnext-core": "0.2.0",
+    "upnext-desktop": "0.3.0",
+    "upnext-core": "0.3.0",
     "zod": "^4.4.3"
   },
   "engines": {

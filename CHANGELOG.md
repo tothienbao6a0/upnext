@@ -1,7 +1,51 @@
 # Changelog
 
-Versions apply to all published packages together: `upnext-core`,
-`upnext-adapter-local`, `upnext-adapter-spotify`, `upnext-adapter-process`.
+Versions apply to all published packages together, so an adapter built against
+one core version is never paired with another.
+
+## 0.3.0
+
+Nothing breaking. On macOS every one of these is a no-op.
+
+### Added
+
+- **Now Playing on Linux.** `upnext-adapter-nowplaying` now reads and controls
+  whatever the machine is playing on Linux as well as macOS, through MPRIS via
+  `playerctl`. Same `nowplaying:current` entry, same reading, same adapter — a
+  host does not have to know which OS it is on, and `sourceFor()` picks the
+  register at `init()`.
+
+  What made this safe to write, having previously been refused: `playerctl`
+  takes a `--format` template, so the record shape is ours rather than
+  somebody else's serialisation, and there is nothing to guess at.
+
+  It is also verified rather than assumed. CI publishes a spec-compliant MPRIS
+  player on a real session bus and drives the real `playerctl` against it,
+  because with no player on the bus `playerctl` exits on "No players found"
+  before it ever reads the template — so a green run without one proves nothing.
+
+- **`upnext-http`**, first release. The queue over HTTP with a live SSE stream,
+  loopback-only unless you set a token. Zero dependencies; the third transport
+  alongside the CLI and MCP, and the same shape as both.
+
+- `sendMpris`, `readMpris`, `parseMpris` and the platform-specific
+  `readMediaRemote` / `sendMediaRemote` are exported by name, for anyone who
+  wants one register rather than whichever this machine has.
+
+### Fixed
+
+- **`desktop()` registered Now Playing only on macOS**, so the Linux support
+  above was invisible to everyone who starts there. The adapter already reports
+  itself unavailable where it cannot reach a register, so the platform check
+  bought nothing and hid a working backend. Its test asserted the old behaviour
+  outright, which is how the gate survived gaining a second platform.
+
+- **`readNowPlaying` and `sendTransport` reached MediaRemote directly**, which
+  made everything built on them macOS-only regardless of the adapter —
+  including the `upnext` CLI's `now`, `pause`, `resume`, `next` and `prev`.
+  They now dispatch by platform. CI drives the CLI itself against the fixture
+  player, since an adapter that works while the CLI does not is the exact shape
+  of the bug.
 
 ## 0.2.0
 

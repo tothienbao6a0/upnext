@@ -1,6 +1,6 @@
 {
   "name": "upnext-core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Source-agnostic media queue and playback runtime. Zero dependencies, no I/O.",
   "license": "Apache-2.0",
   "type": "module",
