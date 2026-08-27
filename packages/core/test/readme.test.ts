@@ -85,6 +85,14 @@ test('nothing listed as unbuilt has actually been built', () => {
   }
 });
 
+test('no hardcoded test count, because it is stale the moment it is written', () => {
+  // It was: the README said 325 while the suite was 329, off by exactly the
+  // four tests added to this file to stop the README drifting. A number that
+  // changes on every commit does not belong in prose.
+  const counts = [...readme.matchAll(/\b(\d{2,})\s+tests\b/g)].map((m) => m[0]);
+  assert.deepEqual(counts, [], `remove the frozen count: ${counts.join(', ')}`);
+});
+
 test('the quickstart installs something that exists', () => {
   const installs = [...readme.matchAll(/npm i ([a-z0-9@/ -]+)/g)].flatMap((m) =>
     m[1]!.trim().split(/\s+/),

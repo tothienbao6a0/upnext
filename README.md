@@ -628,7 +628,8 @@ and no flakes.
 ## Status
 
 Early, but the core, the capability model and the adapter contract are real and
-tested. **325 tests**, CI on Node 20/22 across Linux and macOS.
+tested. Every behavioural change carries a test, and CI runs the whole suite —
+plus the audible demo — on Node 20 and 22 across Linux and macOS on every push.
 
 Several bugs in this design were found by running the demo *out loud* rather than
 by reading code — a doubled end-of-track event, a late prefetch overwriting the
