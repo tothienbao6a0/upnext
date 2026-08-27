@@ -131,6 +131,19 @@ test('a command reports whether it landed', async () => {
   );
 });
 
+test('playerctl has its own name for play-pause', async () => {
+  // The one command whose name differs. Passing our name straight through
+  // would fail at the shell, silently, as a false "no player".
+  const sent: string[][] = [];
+  const run = async (args: string[]) => {
+    sent.push(args);
+    return '';
+  };
+  await sendMpris('togglePlayPause', run);
+  await sendMpris('previous', run);
+  assert.deepEqual(sent, [['play-pause'], ['previous']]);
+});
+
 test('the platform decides which register is asked', () => {
   assert.equal(sourceFor('darwin')?.platform, 'darwin');
   assert.equal(sourceFor('linux')?.platform, 'linux');
