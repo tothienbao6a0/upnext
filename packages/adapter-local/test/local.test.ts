@@ -5,7 +5,17 @@ import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { Library, isAudioPath } from '../src/library.js';
 import { LocalAdapter } from '../src/index.js';
-import { PLAYERS } from '../src/players.js';
+import { PLAYERS, detectPlayer } from '../src/players.js';
+
+/**
+ * Whether this machine has anything that can make a sound.
+ *
+ * CI installs ffmpeg on Linux and macOS ships afplay, so in practice this is
+ * true everywhere it runs — but a contributor on a bare machine should get a
+ * clean skip rather than a wall of failures about a missing binary, and the
+ * no-player path deserves a test of its own rather than being the default.
+ */
+const hasPlayer = (await detectPlayer()) !== null;
 
 /**
  * The reference backend — the one in every quickstart — had no tests at all.
@@ -51,7 +61,11 @@ test('an unreadable directory does not fail the whole scan', async () => {
   assert.equal(library.size, 2, 'the good directory still indexed');
 });
 
-test('search declares itself only when there is a library to search', async () => {
+test('with no player installed, init fails clearly rather than obscurely', { skip: hasPlayer }, async () => {
+  await assert.rejects(() => new LocalAdapter().init(), /no supported audio player/);
+});
+
+test('search declares itself only when there is a library to search', { skip: !hasPlayer }, async () => {
   const bare = new LocalAdapter();
   await bare.init();
   assert.equal(bare.capabilities.search, false, 'nothing to search means it must not claim it');
@@ -61,7 +75,7 @@ test('search declares itself only when there is a library to search', async () =
   assert.equal(indexed.capabilities.search, true);
 });
 
-test('capabilities follow the player that is actually installed', async () => {
+test('capabilities follow the player that is actually installed', { skip: !hasPlayer }, async () => {
   const adapter = new LocalAdapter({ library: [dir] });
   await adapter.init();
 
@@ -84,7 +98,7 @@ test('the player table agrees with itself about seeking and streaming', () => {
   assert.ok(!PLAYERS.afplay!.args('/a.mp3', 30_000).includes('-ss'));
 });
 
-test('it claims files and audio urls, and refuses other schemes', async () => {
+test('it claims files and audio urls, and refuses other schemes', { skip: !hasPlayer }, async () => {
   const adapter = new LocalAdapter();
   await adapter.init();
 
@@ -96,7 +110,7 @@ test('it claims files and audio urls, and refuses other schemes', async () => {
   await adapter.dispose();
 });
 
-test('with a library, a bare title matches and resolves to the real file', async () => {
+test('with a library, a bare title matches and resolves to the real file', { skip: !hasPlayer }, async () => {
   const adapter = new LocalAdapter({ library: [dir], probeDurations: false });
   await adapter.init();
 
@@ -107,7 +121,7 @@ test('with a library, a bare title matches and resolves to the real file', async
   await adapter.dispose();
 });
 
-test('a file that is not there resolves to nothing rather than a broken binding', async () => {
+test('a file that is not there resolves to nothing rather than a broken binding', { skip: !hasPlayer }, async () => {
   const adapter = new LocalAdapter({ probeDurations: false });
   await adapter.init();
   assert.equal(await adapter.resolve({ title: 'Not In Any Library' }), null);

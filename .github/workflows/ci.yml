@@ -30,6 +30,13 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
 
+      # ffmpeg gives Linux an `ffplay`, so `upnext-adapter-local` is genuinely
+      # exercised on this leg instead of reporting itself unavailable and
+      # skipping the tests that matter most for it. macOS has `afplay` built in.
+      - name: Install ffmpeg
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - run: npm ci
 
       - name: Build
