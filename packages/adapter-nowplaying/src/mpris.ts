@@ -100,12 +100,31 @@ export async function readMpris(run: Runner = runPlayerctl): Promise<NowPlayingR
   }
 }
 
+/**
+ * playerctl's names for the transport commands, where they differ from ours.
+ *
+ * Only `play-pause` actually differs, but going through a map means a command
+ * this file has not thought about cannot be passed through to the shell
+ * unchecked.
+ */
+const PLAYERCTL: Record<MprisCommand, string> = {
+  play: 'play',
+  pause: 'pause',
+  togglePlayPause: 'play-pause',
+  next: 'next',
+  previous: 'previous',
+};
+
+export type MprisCommand = 'play' | 'pause' | 'togglePlayPause' | 'next' | 'previous';
+
 export async function sendMpris(
-  command: 'play' | 'pause' | 'next' | 'previous',
+  command: MprisCommand,
   run: Runner = runPlayerctl,
 ): Promise<boolean> {
+  const verb = PLAYERCTL[command];
+  if (!verb) return false;
   try {
-    await run([command]);
+    await run([verb]);
     return true;
   } catch {
     return false;
