@@ -3,13 +3,17 @@
 [![npm](https://img.shields.io/npm/v/upnext-adapter-nowplaying)](https://www.npmjs.com/package/upnext-adapter-nowplaying)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/tothienbao6a0/upnext/blob/main/LICENSE)
 
-**Read and control whatever your Mac is playing — including a browser tab —
-without an extension.**
+**Read and control whatever your machine is playing — including a browser tab —
+without an extension.** macOS and Linux.
 
-macOS keeps a system-wide Now Playing register: the thing Control Center shows,
-and the thing your keyboard's play/pause key talks to. Anything that publishes
-to it is reachable — a YouTube tab in Chrome, a podcast in Safari, VLC, Doppler,
-Music, Spotify.
+Both platforms keep a system-wide register of what is playing: on macOS the one
+Control Center shows and your keyboard's play/pause key talks to, on Linux the
+MPRIS interface players publish on D-Bus. Anything that publishes to it is
+reachable — a YouTube tab in Chrome, a podcast in Safari or Firefox, VLC,
+Doppler, Music, Spotify.
+
+Same entry, same code, either OS. A host should not have to care which one it
+is on, so this package answers that question itself.
 
 ```ts
 import { readNowPlaying, sendTransport } from 'upnext-adapter-nowplaying';
@@ -23,7 +27,8 @@ await sendTransport('pause');   // pauses it, whatever it is
 ```
 
 That works with no browser extension, no accessibility permission, and no
-per-site integration.
+per-site integration. On Linux it needs `playerctl` installed; on macOS it needs
+nothing at all.
 
 ## As a queue entry
 
@@ -75,6 +80,35 @@ take somebody's podcast away from them.
 
 ## How it works, and the honest caveats
 
+Two registers, one shape. `sourceFor()` picks by platform at `init()`, and
+everything above it — the adapter, the URI, the reading — is identical.
+
+### Linux: MPRIS, through `playerctl`
+
+MPRIS is a D-Bus interface that most Linux players implement: browsers, VLC,
+mpv with a plugin, Spotify's Linux client. `playerctl` is its standard
+command-line client, and this shells out to it for the same reason the macOS
+side shells out to `osascript` — the protocol is somebody else's moving target,
+and a process boundary is the right place to keep it.
+
+One thing makes that safe rather than fragile: **`playerctl` takes a `--format`
+template, so the output shape is ours.** Rather than parsing whatever a tool
+decided to print, this asks for exactly the fields it wants, in exactly the
+order it wants them, separated by ASCII 31 — because real track titles contain
+every printable delimiter worth using.
+
+That is also why it can be tested honestly. CI runs a real `playerctl` against a
+real MPRIS player on a real session bus, so a template typo fails the build
+rather than a user's machine. Without a player on the bus, `playerctl` exits on
+"No players found" before it ever reads the template — which means a green test
+run with no player proves nothing, and this one does not do that. See
+[`scripts/mpris-ci.sh`](../../scripts/mpris-ci.sh).
+
+Install it with `apt install playerctl`, `dnf install playerctl`, or your
+distribution's equivalent. Without it, `init()` says so in a sentence.
+
+### macOS: MediaRemote
+
 It reaches `MediaRemote`, a **private Apple framework**, through JXA's
 Objective-C bridge. Private API is normally a bad trade, so:
 
@@ -92,15 +126,18 @@ Objective-C bridge. Private API is normally a bad trade, so:
   itself unavailable, the registry excludes it, and the rest of your queue
   carries on.
 
-**macOS only.** On any other platform `init()` fails cleanly and
-`getState().adapters` shows `available: false` with the reason.
+**Windows is not implemented.** It has an equivalent — SMTC — and the adapter's
+shape would carry over, but nobody has written it. On any unsupported platform
+`init()` fails cleanly and `getState().adapters` shows `available: false` with
+the reason, rather than the adapter pretending and returning nothing.
 
 ### It filters out things that aren't media
 
-macOS's now-playing client is *whatever last made a sound*. A received voice
+The now-playing client is *whatever last made a sound*. A received voice
 message leaves Messages sitting there as the now-playing app, with no title and
 a seven-second "track". Requiring a title and a real duration is what separates
-*something is playing* from *something made a noise once*.
+*something is playing* from *something made a noise once*. Both platforms get
+the same filter, because both have the same problem.
 
 ## Compared with the other adapters
 

@@ -46,8 +46,8 @@ $ upnext now
   Google Chrome · 23:20 / 24:11
 ```
 
-That's a YouTube tab, read with **no browser extension** — through macOS's
-system Now Playing register.
+That's a YouTube tab, read with **no browser extension** — through the system
+Now Playing register, MediaRemote on macOS and MPRIS on Linux.
 
 ### Two kinds of command, and the difference is real
 
@@ -117,16 +117,16 @@ await desktop({
 
 ## What you get where
 
-| | macOS | Linux / Windows |
-|---|:---:|:---:|
-| local files (`ffplay`/`afplay`) | ✅ | ✅ |
-| Spotify desktop app | ✅ | ❌ |
-| system Now Playing (browser tabs, VLC, …) | ✅ | ❌¹ |
-| Spotify Web API | with a token | with a token |
-| a media element | with `element` | with `element` |
+| | macOS | Linux | Windows |
+|---|:---:|:---:|:---:|
+| local files (`ffplay`/`afplay`) | ✅ | ✅ | ✅ |
+| Spotify desktop app | ✅ | ❌ | ❌ |
+| system Now Playing (browser tabs, VLC, …) | ✅ | with `playerctl` | ❌¹ |
+| Spotify Web API | with a token | with a token | with a token |
+| a media element | with `element` | with `element` | with `element` |
 
-¹ Windows and Linux both have an equivalent — SMTC and MPRIS — and the adapter's
-shape carries over. Only macOS is implemented.
+¹ Windows has an equivalent — SMTC — and the adapter's shape carries over, but
+nobody has written it.
 
 Anything unavailable is reported rather than silently missing:
 `summariseSetup(runtime).unavailable` gives you the id and the reason.

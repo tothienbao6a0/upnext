@@ -56,7 +56,7 @@ machine with Spotify reopens on one without it, then plays from somewhere else.
 | **`upnext-adapter-browser`** | any media element you control — browser, Electron renderer, webview, across a process boundary |
 | **`upnext-adapter-local`** | local files and streams via `ffplay`/`afplay` |
 | **`upnext-adapter-apple-music`** | your Apple Music library through the **Music app** — no credentials, **and it can search** |
-| **`upnext-adapter-nowplaying`** | whatever **macOS** is already playing, whichever app is playing it |
+| **`upnext-adapter-nowplaying`** | whatever the **machine** is already playing, whichever app is playing it (macOS + Linux) |
 | **`upnext-adapter-process`** | an adapter written in any language, over a pipe |
 | **`upnext-desktop`** | all of the above wired for you, in one call — plus the `upnext` CLI |
 | **`upnext-mcp`** | the same, as an MCP server any agent can use |
@@ -84,9 +84,8 @@ Every ❌ there is a refusal rather than a silent failure. An adapter that claim
 it can seek and then doesn't is a bug you chase for an hour; these tell you
 first, and the runtime routes around them.
 
-**Not built yet:** Now Playing on Windows and Linux, and controlling one
-*specific* browser tab (needs an extension). Details at the
-[bottom](#not-built-yet).
+**Not built yet:** Now Playing on Windows, and controlling one *specific*
+browser tab (needs an extension). Details at the [bottom](#not-built-yet).
 
 ---
 
@@ -641,9 +640,10 @@ Each has a regression test. If you touch playback, run `npm run demo` and listen
 
 **Not built yet:**
 
-- **Windows and Linux equivalents of Now Playing.** Both have one — SMTC on
-  Windows, MPRIS on Linux — and the adapter's shape would carry over. Only macOS
-  is implemented.
+- **The Windows equivalent of Now Playing.** Windows has one — SMTC — and the
+  adapter's shape would carry over, but nobody has written it. macOS
+  (MediaRemote) and Linux (MPRIS, via `playerctl`) both work today, behind the
+  same `nowplaying:current` entry.
 - **Controlling one *specific* browser tab.** `upnext-adapter-nowplaying` already
   reaches whatever the machine is playing, browser included, through macOS's
   system Now Playing register — no extension needed. Singling out *one* tab among
