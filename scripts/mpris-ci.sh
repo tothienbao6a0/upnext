@@ -54,3 +54,32 @@ UPNEXT_MPRIS_FIXTURE=1 node --test --test-reporter=tap "$SUITE" | tee /dev/stder
     exit 1
   fi
 }
+
+# And the CLI, which is what most people actually touch.
+#
+# The adapter reaching MPRIS while `upnext now` still reached only MediaRemote
+# is not hypothetical -- it is exactly how this was first written. The adapter
+# worked on Linux, the CLI did not, and nothing failed.
+echo
+echo "--- upnext now ---"
+CLI="node packages/desktop/dist/src/cli.js"
+CLI_OUT=$($CLI now)
+echo "$CLI_OUT"
+grep -qF 'Nights: The Remix | Live' <<<"$CLI_OUT" || {
+  echo "FAIL: the CLI did not report the fixture's track"; exit 1; }
+
+echo
+echo "--- upnext pause ---"
+$CLI pause
+PAUSED_OUT=$($CLI now)
+# The CLI marks a paused track with a pause glyph rather than the play one.
+if grep -qF -- "▶" <<<"$PAUSED_OUT"; then
+  echo "$PAUSED_OUT"
+  echo "FAIL: pause did not reach the player through the CLI"
+  exit 1
+fi
+$CLI resume >/dev/null
+
+echo
+echo "Linux Now Playing verified end to end."
+
