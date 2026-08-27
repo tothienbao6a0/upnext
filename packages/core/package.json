@@ -9,7 +9,8 @@
   "exports": {
     ".": "./dist/src/index.js",
     "./testing": "./dist/src/testing.js",
-    "./internal": "./dist/src/internal.js"
+    "./internal": "./dist/src/internal.js",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist/src",

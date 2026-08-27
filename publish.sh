@@ -111,10 +111,14 @@ for p in "${PACKAGES[@]}"; do
   # a second ago is genuinely live and still answers nothing for a moment.
   # Reporting NOT LIVE there is a false alarm on a successful publish.
   live="—"
-  for _ in 1 2 3 4 5 6; do
+  # npm says outright that a publish "may take a few minutes to become
+  # available", and the last package in a run gets checked seconds after it was
+  # uploaded. Eighteen seconds of patience was not enough, and it reported a
+  # perfectly good publish as missing. Two minutes is.
+  for _ in $(seq 1 24); do
     live=$(npm view "${name}" version 2>/dev/null || echo "—")
     [ "${live}" = "${VERSION}" ] && break
-    sleep 3
+    sleep 5
   done
   [ "${live}" = "${VERSION}" ] && say "  live      ${name}@${live}" || say "  NOT LIVE  ${name} (registry says ${live})"
 done
