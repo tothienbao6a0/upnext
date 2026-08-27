@@ -107,7 +107,15 @@ say ""
 say "checking the registry…"
 for p in "${PACKAGES[@]}"; do
   name=$(node -p "require('./packages/${p}/package.json').name")
-  live=$(npm view "${name}" version 2>/dev/null || echo "—")
+  # Retried, because the registry is read-through cached: a package published
+  # a second ago is genuinely live and still answers nothing for a moment.
+  # Reporting NOT LIVE there is a false alarm on a successful publish.
+  live="—"
+  for _ in 1 2 3 4 5 6; do
+    live=$(npm view "${name}" version 2>/dev/null || echo "—")
+    [ "${live}" = "${VERSION}" ] && break
+    sleep 3
+  done
   [ "${live}" = "${VERSION}" ] && say "  live      ${name}@${live}" || say "  NOT LIVE  ${name} (registry says ${live})"
 done
 
