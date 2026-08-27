@@ -54,6 +54,7 @@ export function validateAdapter(adapter: Adapter): void {
     ['seek', 'seek'],
     ['volume', 'setVolume'],
     ['search', 'search'],
+    ['preload', 'preload'],
   ];
   for (const [capability, method] of gated) {
     if (caps[capability] && typeof adapter[method] !== 'function') {

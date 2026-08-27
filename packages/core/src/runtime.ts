@@ -86,6 +86,8 @@ export class Runtime {
   #generation = 0;
   /** The last entry that actually reached playback, for intent context. */
   #lastStartedId: string | null = null;
+  /** What the loaded backend has already been asked to prepare. */
+  #offered: string | null = null;
   /** The queue moved and subscribers have not been told yet. */
   #queueDirty = false;
   /** A flush is already queued for this turn. */
@@ -146,7 +148,12 @@ export class Runtime {
       intentContext: (item) => this.#intentContext(item),
       onResolved: (item) => this.#emitter.emit('item:resolved', { item }),
       onUnresolvable: (item, error) => this.#emitter.emit('item:unresolvable', { item, error }),
-      onChanged: () => this.#emitQueue(),
+      onChanged: () => {
+        this.#emitQueue();
+        // An entry that just became `ready` may be the next one, and it could
+        // not be offered before it was bound.
+        this.#offerNext();
+      },
     });
 
     for (const adapter of options.adapters ?? []) this.addAdapter(adapter);
@@ -323,6 +330,7 @@ export class Runtime {
     const inserted = this.#queue.insert(this.#newItem(input), position);
     this.#emitQueue();
     this.#prefetcher.pump();
+    this.#offerNext();
     return inserted;
   }
 
@@ -346,6 +354,7 @@ export class Runtime {
     this.#queue.move(id, position);
     this.#emitQueue();
     this.#prefetcher.pump();
+    this.#offerNext();
   }
 
   remove(id: string, expectVersion?: number): void {
@@ -445,6 +454,8 @@ export class Runtime {
   async #startNow(item: QueueItem): Promise<void> {
     if (this.#disposed) return;
     const generation = ++this.#generation;
+    // Whatever was prepared belonged to the track being replaced.
+    this.#offered = null;
     const cancelled = () => generation !== this.#generation;
 
     const previous = this.#deck.detach();
@@ -527,6 +538,36 @@ export class Runtime {
     this.#emitQueue();
     this.#emitter.emit('item:started', { item: this.#queue.require(itemId) });
     this.#prefetcher.pump();
+    // The moment a track starts is the moment to hand over the next one; there
+    // is a whole track's worth of time to get it ready.
+    this.#offerNext();
+  }
+
+  /**
+   * Tell the loaded backend what is coming, so it can be ready.
+   *
+   * Only when the next entry is already bound to the *same* backend: a media
+   * element cannot buffer a Spotify track, and asking it to would be nonsense.
+   * That is why this runs after lookahead rather than instead of it — an entry
+   * has to be resolved before anyone can tell which backend it belongs to.
+   *
+   * Best-effort throughout. A preload that fails changes nothing: the entry is
+   * loaded normally when its turn comes and the listener hears the gap this was
+   * meant to remove, rather than an error.
+   */
+  #offerNext(): void {
+    const adapter = this.#deck.adapter;
+    if (!adapter?.preload || !adapter.capabilities.preload) return;
+
+    const next = this.#queue.nextPlayable(this.#deck.itemId);
+    if (!next?.binding || next.binding.adapterId !== adapter.id) return;
+    if (this.#offered === next.binding.nativeUri) return;
+
+    this.#offered = next.binding.nativeUri;
+    this.#detached(
+      adapter.preload(next.binding),
+      `preparing ${next.binding.nativeUri} on ${adapter.id}`,
+    );
   }
 
   #advance(reason: 'completed' | 'skipped'): Promise<void> {
@@ -590,6 +631,7 @@ export class Runtime {
     this.#generation++;
     const adapter = this.#deck.detach();
     if (adapter) await this.#registry.stop(adapter);
+    this.#offered = null;
     this.#deck.reset(status);
   }
 

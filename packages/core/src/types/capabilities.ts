@@ -32,6 +32,21 @@ export interface Capabilities {
    */
   externalControl: boolean;
 
+  /**
+   * Can the backend get the *next* item ready while the current one plays?
+   *
+   * This is what closes the gap between tracks. Without it the runtime has to
+   * wait for one thing to end before it can even start loading the next, and
+   * that round trip is audible — a beat of silence at every transition.
+   *
+   * Deliberately narrower than the `nativeQueue` flag this replaces. That one
+   * claimed a backend "holds a list", which is neither necessary nor sufficient:
+   * what actually matters is whether it can be handed one thing early. A media
+   * element with a spare buffer can; a backend with its own queue that we
+   * cannot write to cannot.
+   */
+  preload: boolean;
+
   seek: boolean;
   pause: boolean;
   volume: boolean;
@@ -40,6 +55,7 @@ export interface Capabilities {
 }
 
 export const defaultCapabilities: Capabilities = {
+  preload: false,
   endOfTrack: 'none',
   position: 'none',
   externalControl: false,

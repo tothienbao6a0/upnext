@@ -62,6 +62,18 @@ export interface Adapter {
   search?(query: string, limit?: number): Promise<MediaRef[]>;
 
   load(binding: Binding, opts?: { startAtMs?: number }): Promise<void>;
+
+  /**
+   * Get this ready to play, without interrupting what is playing now.
+   *
+   * Called while the current track is still running, with whatever the runtime
+   * expects to play next. Required when `capabilities.preload` is true.
+   *
+   * It is a hint, not an instruction: the queue can change, so a preloaded item
+   * may never be played, and `load` may arrive for something else entirely.
+   * Discarding the wasted work is the adapter's problem, and it must be cheap.
+   */
+  preload?(binding: Binding): Promise<void>;
   play(): Promise<void>;
   pause?(): Promise<void>;
   stop(): Promise<void>;
