@@ -37,6 +37,16 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
+      # playerctl is the real client this package shells out to, and the rest is
+      # a session bus plus enough Python to publish a real MPRIS player on it.
+      #
+      # Without a player, playerctl exits on "No players found" before it ever
+      # reads our format template — so a run with no fixture cannot tell a valid
+      # template from a typo. That is the entire reason for the D-Bus fixture.
+      - name: Install playerctl and a session bus
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y playerctl python3-dbus python3-gi dbus-x11
+
       - run: npm ci
 
       - name: Build
@@ -44,6 +54,13 @@ jobs:
 
       - name: Test
         run: npm test
+
+      # Run separately rather than folded into `npm test`: this needs a session
+      # bus wrapped around it, and a fixture player sitting on the bus would
+      # otherwise be visible to every other suite in the workspace.
+      - name: Now Playing on Linux, against a real player
+        if: runner.os == 'Linux'
+        run: dbus-run-session -- scripts/mpris-ci.sh
 
   demo:
     # The demo is the oracle that found the bugs the unit tests did not, so it
