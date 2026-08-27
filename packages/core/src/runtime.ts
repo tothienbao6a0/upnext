@@ -629,9 +629,27 @@ export class Runtime {
    */
   async #halt(status: PlaybackStatus): Promise<void> {
     this.#generation++;
+    const itemId = this.#deck.itemId;
     const adapter = this.#deck.detach();
     if (adapter) await this.#registry.stop(adapter);
     this.#offered = null;
+
+    // An entry cannot still be `active` once nothing is playing it. Left that
+    // way, a host renders a now-playing row over silence, and `nextPlayable`
+    // skips the entry entirely — so `stop()` followed by `play()` would jump a
+    // track rather than resuming the one it stopped.
+    //
+    // Which status it returns to depends on why we stopped: reaching the end of
+    // the queue means the track finished, while `stop()` interrupted it and it
+    // should be playable again.
+    const item = itemId ? this.#queue.get(itemId) : undefined;
+    if (item?.status === 'active') {
+      this.#queue.update(itemId!, {
+        status: status === 'ended' ? 'ended' : item.binding ? 'ready' : 'unresolved',
+      });
+      this.#emitQueue();
+    }
+
     this.#deck.reset(status);
   }
 

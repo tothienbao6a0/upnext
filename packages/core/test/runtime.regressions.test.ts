@@ -111,3 +111,36 @@ test('replaying an entry that already failed everywhere gets a fresh attempt', a
   assert.equal(runtime.nowPlaying()?.ref.title, 'one');
   assert.equal(runtime.getPlayback().status, 'playing');
 });
+
+test('stopping settles the entry, so playing again resumes rather than skips', async () => {
+  const { runtime } = harness();
+  runtime.enqueue({ title: 'one' });
+  runtime.enqueue({ title: 'two' });
+  await runtime.play();
+  await runtime.stop();
+
+  // It was `active` while the runtime was idle — a contradiction a host would
+  // render as a now-playing row over silence, and which made `nextPlayable`
+  // skip the entry so `play()` jumped a track.
+  assert.notEqual(runtime.getQueue()[0]!.status, 'active');
+  assert.equal(runtime.getPlayback().status, 'idle');
+
+  await runtime.play();
+  assert.equal(runtime.nowPlaying()?.ref.title, 'one', 'should resume, not skip');
+  await runtime.dispose();
+});
+
+test('reaching the end of the queue still marks the last entry ended', async () => {
+  const { runtime, adapter } = harness();
+  runtime.enqueue({ title: 'only' });
+  await runtime.play();
+
+  adapter.finish();
+  await flush();
+
+  // The other half of the same change: halting because the queue finished must
+  // not make the track playable again, or repeat-off would loop forever.
+  assert.equal(runtime.getQueue()[0]!.status, 'ended');
+  assert.equal(runtime.getPlayback().status, 'ended');
+  await runtime.dispose();
+});
