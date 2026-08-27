@@ -18,6 +18,8 @@ export interface FakeAdapterOptions {
   handles?: (ref: MediaRef) => boolean;
   /** Throw on `load` — for exercising cross-source fallback. */
   failOnLoad?: boolean;
+  /** Throw on `preload`, which the runtime must survive. */
+  failOnPreload?: boolean;
   /** Return null from `resolve` — as if the catalogue lacks the track. */
   failOnResolve?: boolean;
   defaultDurationMs?: number;
@@ -88,6 +90,21 @@ export class FakeAdapter implements Adapter {
           entry.artist?.toLowerCase().includes(needle),
       )
       .slice(0, limit);
+  }
+
+  /**
+   * What the runtime offered ahead of time, in order.
+   *
+   * Here so a host can assert its own gapless behaviour: that the next item was
+   * handed over while the current one was still playing, and that a queue
+   * change re-offered the right thing.
+   */
+  readonly preloaded: string[] = [];
+
+  async preload(binding: Binding): Promise<void> {
+    this.calls.push('preload');
+    if (this.#opts.failOnPreload) throw new Error(`${this.id} cannot prepare anything`);
+    this.preloaded.push(binding.nativeUri);
   }
 
   async load(binding: Binding): Promise<void> {
