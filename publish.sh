@@ -45,7 +45,7 @@ publish_one() {
 # core first: the adapters pin it by exact version, so if a run does die partway
 # it leaves adapters unpublished rather than adapters pointing at a runtime that
 # is not on the registry yet.
-PACKAGES=(core adapter-local adapter-process adapter-spotify adapter-browser adapter-nowplaying adapter-apple-music desktop mcp)
+PACKAGES=(core adapter-local adapter-process adapter-spotify adapter-browser adapter-nowplaying adapter-apple-music desktop mcp http)
 
 say() { printf '%s\n' "$*"; }
 

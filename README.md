@@ -60,6 +60,7 @@ machine with Spotify reopens on one without it, then plays from somewhere else.
 | **`upnext-adapter-process`** | an adapter written in any language, over a pipe |
 | **`upnext-desktop`** | all of the above wired for you, in one call — plus the `upnext` CLI |
 | **`upnext-mcp`** | the same, as an MCP server any agent can use |
+| **`upnext-http`** | the same, over HTTP with a live event stream |
 
 ### What each one can actually do
 
@@ -83,8 +84,8 @@ Every ❌ there is a refusal rather than a silent failure. An adapter that claim
 it can seek and then doesn't is a bug you chase for an hour; these tell you
 first, and the runtime routes around them.
 
-**Not built yet:** Now Playing on Windows and Linux, controlling one *specific*
-browser tab (needs an extension), and an HTTP transport. Details at the
+**Not built yet:** Now Playing on Windows and Linux, and controlling one
+*specific* browser tab (needs an extension). Details at the
 [bottom](#not-built-yet).
 
 ---
@@ -654,9 +655,8 @@ Each has a regression test. If you touch playback, run `npm run demo` and listen
   and cannot be from here: their AppleScript dictionaries have no way to hand
   them a track to play next, so the runtime has to drive each transition and
   that round trip is the gap.
-- **An HTTP transport.** MCP and a CLI both ship now (`upnext-mcp`,
-  `upnext-desktop`); HTTP would follow the same shape — a thin package on top of
-  the core, so nobody importing the runtime inherits a transport opinion.
+(All three transports ship now: `upnext-mcp`, the `upnext` CLI in
+`upnext-desktop`, and `upnext-http`.)
 
 ---
 

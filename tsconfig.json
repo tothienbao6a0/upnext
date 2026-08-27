@@ -29,6 +29,9 @@
       "path": "./packages/mcp"
     },
     {
+      "path": "./packages/http"
+    },
+    {
       "path": "./packages/demo"
     }
   ]
