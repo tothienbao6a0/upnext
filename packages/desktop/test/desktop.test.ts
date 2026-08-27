@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
+import { mprisAvailable } from 'upnext-adapter-nowplaying';
 import { desktop, explainSetup, summariseSetup } from '../src/index.js';
 
 let library: string;
@@ -45,12 +46,29 @@ test('one call gets you a working runtime on any platform', async () => {
 
 test('it wires the platform-specific sources where they exist', async () => {
   const runtime = await desktop();
-  const ids = summariseSetup(runtime).available.map((a) => a.id);
+  const { available, unavailable } = summariseSetup(runtime);
+  const ids = available.map((a) => a.id);
+  const registered = [...ids, ...unavailable.map((a) => a.id)];
+
+  // Registered on every platform, so a platform that gains support is not
+  // hidden by a stale gate. Linux gained one, and a `platform === 'darwin'`
+  // check here kept it invisible to everybody starting from `desktop()` —
+  // the adapter worked and nothing reached it.
+  assert.ok(registered.includes('nowplaying'), 'the adapter should be registered everywhere');
 
   if (process.platform === 'darwin') {
-    assert.ok(ids.includes('nowplaying'), 'macOS should reach the Now Playing register');
+    assert.ok(ids.includes('nowplaying'), 'macOS reaches the register through MediaRemote');
+  } else if (process.platform === 'linux') {
+    // Available exactly when playerctl is installed. When it is not, the
+    // adapter says which thing is missing rather than disappearing.
+    const reachable = await mprisAvailable();
+    assert.equal(ids.includes('nowplaying'), reachable);
+    if (!reachable) {
+      const reason = unavailable.find((a) => a.id === 'nowplaying')?.reason ?? '';
+      assert.match(reason, /playerctl/, 'an actionable reason, not just "unavailable"');
+    }
   } else {
-    assert.ok(!ids.includes('nowplaying'), 'a macOS-only adapter must not claim to work elsewhere');
+    assert.ok(!ids.includes('nowplaying'), 'Windows has no implementation, and does not pretend');
   }
   await runtime.dispose();
 });
