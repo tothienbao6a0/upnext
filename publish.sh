@@ -18,6 +18,18 @@ cd "$(dirname "$0")"
 
 OTP="${1:-}"
 
+# Validated rather than trusted, because an interactive zsh does not treat `#`
+# as a comment — so pasting a command with a trailing note attached sends the
+# `#` here as the one-time code, and npm rejects all nine publishes with a
+# message about a regex. Anything that is not digits is refused up front.
+if [ -n "$OTP" ] && ! printf '%s' "$OTP" | grep -Eq '^[0-9]{6,8}$'; then
+  printf 'Not a one-time code: %s\n' "$OTP"
+  printf 'Pass six digits from your authenticator, or nothing at all:\n'
+  printf '  ./publish.sh\n'
+  printf '  ./publish.sh 123456\n'
+  exit 1
+fi
+
 # Written out rather than expanding a possibly-empty array: bash 3.2, which is
 # what macOS ships, treats "${arr[@]}" on an empty array as an unbound variable
 # under `set -u`.
