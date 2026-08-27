@@ -38,6 +38,17 @@ export interface MediaElementAdapterOptions {
   element: MediaElementLike | (() => MediaElementLike);
   /** Extra media types this element is known to handle, e.g. `['audio/flac']`. */
   extraExtensions?: string[];
+  /**
+   * A second element, which turns the gap between tracks into no gap.
+   *
+   * One element cannot buffer the next track while playing this one — setting
+   * `src` stops what is playing. With two, the idle one loads ahead and the
+   * switch at the end is instant.
+   *
+   * Without it the adapter still works and simply declares `preload: false`,
+   * because a capability you cannot honour is worse than one you lack.
+   */
+  spare?: MediaElementLike | (() => MediaElementLike);
 }
 
 /**
@@ -57,7 +68,7 @@ export interface MediaElementAdapterOptions {
 export class MediaElementAdapter implements Adapter {
   readonly id: string;
 
-  readonly capabilities: Capabilities = {
+  capabilities: Capabilities = {
     ...defaultCapabilities,
     // The element tells us. No polling, no duration timer, no guessing.
     endOfTrack: 'event',
@@ -65,6 +76,8 @@ export class MediaElementAdapter implements Adapter {
     seek: true,
     pause: true,
     volume: true,
+    // Only with somewhere to buffer into. Set in the constructor.
+    preload: false,
     // Nothing to search — this plays a URL it is handed.
     search: false,
     // Nobody else has a handle on this element. If something else could pause
@@ -74,6 +87,9 @@ export class MediaElementAdapter implements Adapter {
 
   #options: MediaElementAdapterOptions;
   #element: MediaElementLike | null = null;
+  #spareElement: MediaElementLike | null = null;
+  /** What the spare is currently holding, if anything. */
+  #buffered: string | null = null;
   #listeners = new Set<(event: AdapterEvent) => void>();
   #detach: Array<() => void> = [];
   #binding: Binding | null = null;
@@ -83,6 +99,8 @@ export class MediaElementAdapter implements Adapter {
   constructor(options: MediaElementAdapterOptions) {
     this.id = options.id ?? 'browser';
     this.#options = options;
+    // Declared from what was actually supplied, never hopefully.
+    this.capabilities = { ...this.capabilities, preload: Boolean(options.spare) };
   }
 
   match(ref: MediaRef): number {
@@ -98,7 +116,45 @@ export class MediaElementAdapter implements Adapter {
     };
   }
 
+  /**
+   * Get this ready without disturbing what is playing.
+   *
+   * The spare element does the buffering. If the runtime then asks to `load`
+   * exactly this, the two elements swap and playback starts from an already
+   * filled buffer — which is the whole of the gapless trick.
+   */
+  async preload(binding: Binding): Promise<void> {
+    const spare = this.#spare();
+    if (!spare) return;
+
+    // Already holding it. Re-fetching would throw the buffer away.
+    if (this.#buffered === binding.nativeUri) return;
+
+    this.#buffered = binding.nativeUri;
+    spare.src = binding.nativeUri;
+    spare.load?.();
+  }
+
   async load(binding: Binding, opts?: { startAtMs?: number }): Promise<void> {
+    const spare = this.#spare();
+
+    // The happy path: this is exactly what was buffered, so swap rather than
+    // fetch. A start offset means seeking anyway, so the buffer buys nothing
+    // and the ordinary path is simpler.
+    if (spare && this.#buffered === binding.nativeUri && !opts?.startAtMs) {
+      const stale = this.#ensure();
+      this.#unwire();
+      stale.pause();
+      stale.src = '';
+
+      this.#element = spare;
+      this.#spareElement = stale;
+      this.#buffered = null;
+      this.#binding = binding;
+      if (this.#listeners.size > 0) this.#wire();
+      return;
+    }
+
     const element = this.#ensure();
     this.#binding = binding;
 
@@ -158,10 +214,26 @@ export class MediaElementAdapter implements Adapter {
     await this.stop();
     this.#unwire();
     this.#listeners.clear();
+    if (this.#spareElement) {
+      // A spare left holding a source goes on buffering after we are gone.
+      this.#spareElement.pause();
+      this.#spareElement.src = '';
+    }
     this.#element = null;
+    this.#spareElement = null;
+    this.#buffered = null;
   }
 
   // -- internals ------------------------------------------------------------
+
+  #spare(): MediaElementLike | null {
+    if (!this.#options.spare) return null;
+    if (!this.#spareElement) {
+      const source = this.#options.spare;
+      this.#spareElement = typeof source === 'function' ? source() : source;
+    }
+    return this.#spareElement;
+  }
 
   #ensure(): MediaElementLike {
     if (!this.#element) {
