@@ -3,6 +3,41 @@
 Versions apply to all published packages together: `upnext-core`,
 `upnext-adapter-local`, `upnext-adapter-spotify`, `upnext-adapter-process`.
 
+## 0.2.0
+
+**Breaking**, which is why this is a minor: `Capabilities` gained a required
+`preload` field, so an adapter that builds a capability literal without
+spreading `defaultCapabilities` will no longer compile.
+
+### Added
+
+- **Gapless playback.** A backend can now be handed the next item while the
+  current one is still playing, through a new `preload` capability and an
+  optional `preload(binding)` method. `upnext-adapter-browser` implements it by
+  double buffering: give it a `spare` element and the next track loads into the
+  idle one, so the switch at the end is instant instead of a fetch.
+
+  This replaces the `nativeQueue` flag removed in 0.1.0, and is deliberately
+  narrower. Whether a backend holds a list is neither necessary nor sufficient;
+  what matters is whether it can be handed one thing early. Spotify and Apple
+  Music still cannot be gapless from here — their AppleScript dictionaries offer
+  no way to queue a track — and now say so rather than being listed as unbuilt.
+
+  The offer is a hint, not an instruction: the queue can change, so a prepared
+  item may never play, and a preload that fails costs the gap rather than the
+  track.
+
+- `FakeAdapter` records what it was offered, so a host can assert its own
+  gapless behaviour.
+
+### Fixed
+
+- **`stop()` left the entry marked `active`** while playback was idle. A host
+  rendering the queue showed a now-playing row over silence, and because
+  `nextPlayable` skips active entries, `stop()` followed by `play()` jumped a
+  track instead of resuming the one it stopped. Reaching the end of the queue
+  still marks the entry `ended`.
+
 ## 0.1.0
 
 **Breaking**, which is why this is a minor rather than a patch: `nativeQueue` is

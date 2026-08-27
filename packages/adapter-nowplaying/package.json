@@ -1,6 +1,6 @@
 {
   "name": "upnext-adapter-nowplaying",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Read and control whatever macOS is playing \u2014 a browser tab, VLC, Doppler, anything that publishes to Control Center.",
   "license": "Apache-2.0",
   "type": "module",
@@ -14,7 +14,7 @@
     "src"
   ],
   "dependencies": {
-    "upnext-core": "0.1.0"
+    "upnext-core": "0.2.0"
   },
   "engines": {
     "node": ">=20"

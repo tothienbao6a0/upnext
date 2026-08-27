@@ -1,27 +1,45 @@
 {
   "name": "upnext-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "An MCP server for your machine's audio: one queue across Spotify, the browser, local files and whatever is already playing.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
-  "exports": { ".": "./dist/src/index.js" },
-  "bin": { "upnext-mcp": "./dist/src/server.js" },
-  "files": ["dist/src", "src"],
+  "exports": {
+    ".": "./dist/src/index.js"
+  },
+  "bin": {
+    "upnext-mcp": "./dist/src/server.js"
+  },
+  "files": [
+    "dist/src",
+    "src"
+  ],
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
-    "upnext-desktop": "0.1.0",
-    "upnext-core": "0.1.0",
+    "upnext-desktop": "0.2.0",
+    "upnext-core": "0.2.0",
     "zod": "^4.4.3"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tothienbao6a0/upnext.git",
     "directory": "packages/mcp"
   },
   "homepage": "https://github.com/tothienbao6a0/upnext#readme",
-  "bugs": { "url": "https://github.com/tothienbao6a0/upnext/issues" },
-  "keywords": ["mcp", "model-context-protocol", "audio", "spotify", "agents", "upnext"]
+  "bugs": {
+    "url": "https://github.com/tothienbao6a0/upnext/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "audio",
+    "spotify",
+    "agents",
+    "upnext"
+  ]
 }
