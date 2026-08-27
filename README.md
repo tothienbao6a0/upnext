@@ -628,7 +628,7 @@ and no flakes.
 ## Status
 
 Early, but the core, the capability model and the adapter contract are real and
-tested. **238 tests**, CI on Node 20/22 across Linux and macOS.
+tested. **325 tests**, CI on Node 20/22 across Linux and macOS.
 
 Several bugs in this design were found by running the demo *out loud* rather than
 by reading code — a doubled end-of-track event, a late prefetch overwriting the
