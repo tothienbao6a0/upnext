@@ -2,8 +2,9 @@
 #
 # Publish every package. Safe to re-run.
 #
-#   ./publish.sh            # npm asks for auth as it goes (browser or prompt)
-#   ./publish.sh 123456     # pass a one-time code once, for all of them
+#   ./publish.sh 123456     one code from your authenticator, used for all nine
+#   ./publish.sh            npm asks per package instead — a browser approval
+#                           each time, which works but is nine round trips
 #
 # Three properties that matter, learned from a run that silently did nothing:
 #
@@ -67,6 +68,11 @@ if ! npm test >/tmp/publish-test.log 2>&1; then
 fi
 say "  green"
 say ""
+if [ -z "$OTP" ]; then
+  say "No one-time code given, so npm will ask per package — nine times."
+  say "A code from your authenticator covers all of them: ./publish.sh 123456"
+  say ""
+fi
 
 # -- publish -----------------------------------------------------------------
 
@@ -81,11 +87,16 @@ for p in "${PACKAGES[@]}"; do
     SKIPPED+=("$name"); continue
   fi
 
-  if publish_one "$p" >"/tmp/publish-$p.log" 2>&1; then
+  # Output is deliberately NOT captured. npm authenticates per publish, and
+  # with 2FA that means either prompting or opening a browser — neither of
+  # which it will attempt when stdout is not a terminal. Redirecting to a log
+  # turned every publish into an EOTP failure with nowhere to type the code.
+  say "publishing      $name@$VERSION…"
+  if publish_one "$p"; then
     say "PUBLISHED      $name@$VERSION"
     PUBLISHED+=("$name")
   else
-    say "FAILED         $name -> $(grep -m1 'npm error' "/tmp/publish-$p.log" | head -c 120)"
+    say "FAILED         $name  (error above)"
     FAILED+=("$name")
   fi
 done
