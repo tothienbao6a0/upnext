@@ -1,0 +1,21 @@
+{
+  "name": "upnext-http",
+  "version": "0.2.0",
+  "description": "Control an upnext queue over HTTP, with a live event stream. Zero dependencies, loopback by default.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": { ".": "./dist/src/index.js", "./package.json": "./package.json" },
+  "files": ["dist/src", "src"],
+  "dependencies": { "upnext-core": "0.2.0" },
+  "engines": { "node": ">=20" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tothienbao6a0/upnext.git",
+    "directory": "packages/http"
+  },
+  "homepage": "https://github.com/tothienbao6a0/upnext#readme",
+  "bugs": { "url": "https://github.com/tothienbao6a0/upnext/issues" },
+  "keywords": ["audio", "queue", "http", "sse", "remote-control", "upnext"]
+}
