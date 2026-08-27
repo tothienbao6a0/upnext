@@ -49,8 +49,14 @@ export async function desktop(options: DesktopOptions = {}): Promise<Runtime> {
     // resolve a plain title — which is what makes `enqueue({ title })` work on
     // a Mac with nothing configured.
     adapters.push(new AppleMusicAdapter());
-    adapters.push(new NowPlayingAdapter());
   }
+
+  // Not inside the macOS branch: the register exists on Linux too, through
+  // MPRIS. The adapter reports itself unavailable where it cannot reach one —
+  // on Windows, or on a Linux box without playerctl — so registering it
+  // unconditionally costs nothing and forgetting to would make the Linux
+  // support invisible to everyone who starts from `desktop()`.
+  adapters.push(new NowPlayingAdapter());
 
   if (element) adapters.push(new MediaElementAdapter({ element }));
 
