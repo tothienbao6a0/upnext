@@ -23,8 +23,8 @@ OTP="${1:-}"
 # as a comment — so pasting a command with a trailing note attached sends the
 # `#` here as the one-time code, and npm rejects all nine publishes with a
 # message about a regex. Anything that is not digits is refused up front.
-if [ -n "$OTP" ] && ! printf '%s' "$OTP" | grep -Eq '^[0-9]{6,8}$'; then
-  printf 'Not a one-time code: %s\n' "$OTP"
+if [ -n "${OTP}" ] && ! printf '%s' "${OTP}" | grep -Eq '^[0-9]{6,8}$'; then
+  printf 'Not a one-time code: %s\n' "${OTP}"
   printf 'Pass six digits from your authenticator, or nothing at all:\n'
   printf '  ./publish.sh\n'
   printf '  ./publish.sh 123456\n'
@@ -35,8 +35,8 @@ fi
 # what macOS ships, treats "${arr[@]}" on an empty array as an unbound variable
 # under `set -u`.
 publish_one() {
-  if [ -n "$OTP" ]; then
-    npm publish -w "packages/$1" --otp="$OTP"
+  if [ -n "${OTP}" ]; then
+    npm publish -w "packages/$1" --otp="${OTP}"
   else
     npm publish -w "packages/$1"
   fi
@@ -52,12 +52,12 @@ say() { printf '%s\n' "$*"; }
 # -- preflight ---------------------------------------------------------------
 
 say "checking versions agree…"
-VERSIONS=$(for p in "${PACKAGES[@]}"; do node -p "require('./packages/$p/package.json').version"; done | sort -u)
-if [ "$(echo "$VERSIONS" | wc -l | tr -d ' ')" != "1" ]; then
-  say "ABORT: packages are at different versions:"; echo "$VERSIONS"; exit 1
+VERSIONS=$(for p in "${PACKAGES[@]}"; do node -p "require('./packages/${p}/package.json').version"; done | sort -u)
+if [ "$(echo "${VERSIONS}" | wc -l | tr -d ' ')" != "1" ]; then
+  say "ABORT: packages are at different versions:"; echo "${VERSIONS}"; exit 1
 fi
-VERSION=$(echo "$VERSIONS" | head -1)
-say "  all at $VERSION"
+VERSION=$(echo "${VERSIONS}" | head -1)
+say "  all at ${VERSION}"
 
 say "building and testing…"
 if ! npm run build >/tmp/publish-build.log 2>&1; then
@@ -68,7 +68,7 @@ if ! npm test >/tmp/publish-test.log 2>&1; then
 fi
 say "  green"
 say ""
-if [ -z "$OTP" ]; then
+if [ -z "${OTP}" ]; then
   say "No one-time code given, so npm will ask per package — nine times."
   say "A code from your authenticator covers all of them: ./publish.sh 123456"
   say ""
@@ -79,25 +79,25 @@ fi
 PUBLISHED=(); SKIPPED=(); FAILED=()
 
 for p in "${PACKAGES[@]}"; do
-  name=$(node -p "require('./packages/$p/package.json').name")
+  name=$(node -p "require('./packages/${p}/package.json').name")
 
   # Already there? Then a previous run got this far. Nothing to do.
-  if npm view "$name@$VERSION" version >/dev/null 2>&1; then
-    say "already live   $name@$VERSION"
-    SKIPPED+=("$name"); continue
+  if npm view "${name}@${VERSION}" version >/dev/null 2>&1; then
+    say "already live   ${name}@${VERSION}"
+    SKIPPED+=("${name}"); continue
   fi
 
   # Output is deliberately NOT captured. npm authenticates per publish, and
   # with 2FA that means either prompting or opening a browser — neither of
   # which it will attempt when stdout is not a terminal. Redirecting to a log
   # turned every publish into an EOTP failure with nowhere to type the code.
-  say "publishing      $name@$VERSION…"
-  if publish_one "$p"; then
-    say "PUBLISHED      $name@$VERSION"
-    PUBLISHED+=("$name")
+  say "publishing      ${name}@${VERSION}…"
+  if publish_one "${p}"; then
+    say "PUBLISHED      ${name}@${VERSION}"
+    PUBLISHED+=("${name}")
   else
-    say "FAILED         $name  (error above)"
-    FAILED+=("$name")
+    say "FAILED         ${name}  (error above)"
+    FAILED+=("${name}")
   fi
 done
 
@@ -106,9 +106,9 @@ done
 say ""
 say "checking the registry…"
 for p in "${PACKAGES[@]}"; do
-  name=$(node -p "require('./packages/$p/package.json').name")
-  live=$(npm view "$name" version 2>/dev/null || echo "—")
-  [ "$live" = "$VERSION" ] && say "  live      $name@$live" || say "  NOT LIVE  $name (registry says $live)"
+  name=$(node -p "require('./packages/${p}/package.json').name")
+  live=$(npm view "${name}" version 2>/dev/null || echo "—")
+  [ "${live}" = "${VERSION}" ] && say "  live      ${name}@${live}" || say "  NOT LIVE  ${name} (registry says ${live})"
 done
 
 say ""
