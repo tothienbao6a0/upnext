@@ -26,9 +26,17 @@ await readNowPlaying();
 await sendTransport('pause');   // pauses it, whatever it is
 ```
 
+On Linux the same call answers from MPRIS instead, and the reading has the same
+shape — `bundleId` is the player name (`firefox`, `vlc`, `spotify`) rather than
+a bundle identifier.
+
 That works with no browser extension, no accessibility permission, and no
 per-site integration. On Linux it needs `playerctl` installed; on macOS it needs
 nothing at all.
+
+If you specifically want one register rather than whichever this machine has,
+`readMediaRemote` / `sendMediaRemote` and `readMpris` / `sendMpris` are exported
+under their own names.
 
 ## As a queue entry
 
