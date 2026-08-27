@@ -83,9 +83,9 @@ Every ❌ there is a refusal rather than a silent failure. An adapter that claim
 it can seek and then doesn't is a bug you chase for an hour; these tell you
 first, and the runtime routes around them.
 
-**Not built yet:** Apple Music, gapless handoff into a native queue, controlling
-a *specific* browser tab (needs an extension), and MCP/CLI/HTTP transports.
-Details at the [bottom](#not-built-yet).
+**Not built yet:** gapless handoff into a native queue, Now Playing on Windows
+and Linux, controlling one *specific* browser tab (needs an extension), and an
+HTTP transport. Details at the [bottom](#not-built-yet).
 
 ---
 
