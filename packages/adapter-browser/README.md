@@ -99,6 +99,25 @@ This is the fully-controlled end of the capability spectrum — the opposite of
 Blocked autoplay is reported as a failure rather than swallowed, so the runtime
 falls through to a source that can actually make sound.
 
+## Gapless
+
+Give it a second element and the next track is buffered while the current one is
+still playing, so the switch at the end is instant rather than a fetch:
+
+```ts
+new MediaElementAdapter({
+  element: () => new Audio(),
+  spare:   () => new Audio(),   // the next track loads in here
+});
+```
+
+One element cannot do this — setting `src` stops what is playing. With two, the
+idle one loads ahead and the pair swap over at the end.
+
+Without `spare` the adapter works exactly as before and declares
+`preload: false`, because a capability it cannot honour is worse than one it
+lacks. The runtime reads that flag and simply does not offer it anything early.
+
 ## Across a process boundary
 
 In Electron the queue usually lives in the main process, and only a renderer can

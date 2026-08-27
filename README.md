@@ -83,9 +83,9 @@ Every ❌ there is a refusal rather than a silent failure. An adapter that claim
 it can seek and then doesn't is a bug you chase for an hour; these tell you
 first, and the runtime routes around them.
 
-**Not built yet:** gapless handoff into a native queue, Now Playing on Windows
-and Linux, controlling one *specific* browser tab (needs an extension), and an
-HTTP transport. Details at the [bottom](#not-built-yet).
+**Not built yet:** Now Playing on Windows and Linux, controlling one *specific*
+browser tab (needs an extension), and an HTTP transport. Details at the
+[bottom](#not-built-yet).
 
 ---
 
@@ -648,12 +648,12 @@ Each has a regression test. If you touch playback, run `npm run demo` and listen
   system Now Playing register — no extension needed. Singling out *one* tab among
   several, though, does need a browser extension, and that is a control feature
   rather than a queue one: you cannot queue into a tab you do not own.
-- **Gapless handoff into a native queue.** Same-backend transitions have a small
-  gap, because the runtime drives every one of them. (There *was* a `nativeQueue`
-  capability describing this. It was declared, defaulted, and read by nothing —
-  not even the validator — so it was removed rather than left as decoration in a
-  contract whose whole claim is that capabilities are honest. It comes back in a
-  minor version if the handoff does.)
+- **Gapless on backends we do not own.** `upnext-adapter-browser` is gapless
+  now — give it a `spare` element and the next track is buffered while the
+  current one plays, so the switch is instant. Spotify and Apple Music are not,
+  and cannot be from here: their AppleScript dictionaries have no way to hand
+  them a track to play next, so the runtime has to drive each transition and
+  that round trip is the gap.
 - **An HTTP transport.** MCP and a CLI both ship now (`upnext-mcp`,
   `upnext-desktop`); HTTP would follow the same shape — a thin package on top of
   the core, so nobody importing the runtime inherits a transport opinion.
