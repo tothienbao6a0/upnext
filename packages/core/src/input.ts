@@ -30,14 +30,27 @@ function isIntent(input: MediaRef | { intent: string }): input is { intent: stri
   return 'intent' in input && typeof input.intent === 'string' && !('uri' in input);
 }
 
-/** A scheme, or a filesystem path. Anything else is prose. */
+/**
+ * A scheme, or a filesystem path. Anything else is prose.
+ *
+ * The whitespace rule is what keeps titles out of here. A scheme is just
+ * letters followed by a colon, which describes `spotify:` — and also describes
+ * `Nights: The Remix`, `Interlude: Moving On`, and every podcast episode named
+ * `Something: Something Else`. Those were being read as locators with a scheme
+ * of `nights`, then failing to bind because no adapter handles that.
+ *
+ * A URI cannot contain a raw space; spaces are percent-encoded. So a
+ * scheme-shaped string with whitespace in it is prose, whatever it looks like.
+ * Paths are exempt, because `/Users/me/My Song.mp3` is perfectly ordinary.
+ */
 export function looksLikeLocator(value: string): boolean {
-  return (
-    /^[a-z][a-z0-9+.-]*:/i.test(value) ||
-    value.startsWith('/') ||
-    value.startsWith('./') ||
-    value.startsWith('../')
-  );
+  const trimmed = value.trim();
+
+  if (trimmed.startsWith('/') || trimmed.startsWith('./') || trimmed.startsWith('../')) {
+    return true;
+  }
+
+  return /^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !/\s/.test(trimmed);
 }
 
 /** A short human-readable label, for error messages and logs. */
