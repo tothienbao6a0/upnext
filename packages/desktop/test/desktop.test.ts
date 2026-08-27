@@ -83,7 +83,18 @@ test('indexing a folder is enough to make titles resolvable', async () => {
 });
 
 test('and then a bare title actually plays from that folder', async () => {
-  const runtime = await desktop({ library: [library] });
+  // The macOS backends are excluded deliberately. They score higher than local
+  // on a bare title, so each one spawns an osascript process and declines
+  // before local gets its turn — which on a CI runner took longer than this
+  // test was willing to wait, and made it flaky there but not here.
+  //
+  // What is being checked is that indexing a folder makes a title resolvable
+  // at all. Which backend wins a contested title is the binder's business, and
+  // is tested where that decision lives.
+  const runtime = await desktop({
+    library: [library],
+    exclude: ['spotify-desktop', 'apple-music', 'nowplaying'],
+  });
   const item = runtime.enqueue({ title: 'Bad Habit' });
 
   // Resolution is what is being checked here, not audio. Wait for the binding
