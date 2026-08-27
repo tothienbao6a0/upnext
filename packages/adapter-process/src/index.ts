@@ -4,7 +4,7 @@ import { defaultCapabilities } from 'upnext-core';
 import type {
   Adapter,
   AdapterEvent,
-  AdapterState,
+  AdapterReading,
   Binding,
   Capabilities,
   MediaRef,
@@ -147,8 +147,8 @@ export class ProcessAdapter implements Adapter {
     await this.#request('setVolume', { volume });
   }
 
-  async poll(): Promise<AdapterState> {
-    return (await this.#request('poll')) as AdapterState;
+  async poll(): Promise<AdapterReading> {
+    return (await this.#request('poll')) as AdapterReading;
   }
 
   subscribe(listener: (event: AdapterEvent) => void): () => void {

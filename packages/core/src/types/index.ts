@@ -12,7 +12,7 @@ export { defaultCapabilities } from './capabilities.js';
 export type { ItemStatus, QueueItem, Position, SerializedError } from './queue.js';
 export type { PlaybackStatus, PlaybackState } from './playback.js';
 export { idlePlayback } from './playback.js';
-export type { Adapter, AdapterEvent, AdapterState } from './adapter.js';
+export type { Adapter, AdapterEvent, AdapterReading } from './adapter.js';
 export type {
   IntentContext,
   IntentResolver,

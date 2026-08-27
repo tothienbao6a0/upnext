@@ -15,8 +15,16 @@ export type AdapterEvent =
   | { type: 'external'; nativeUri: string | null; ref?: MediaRef }
   | { type: 'error'; code: string; message: string };
 
-/** A point-in-time read of a backend, for adapters that cannot push. */
-export interface AdapterState {
+/**
+ * A point-in-time read of a backend, for adapters that cannot push.
+ *
+ * A *reading*, not a state: it is one sample taken by asking, and the next one
+ * may disagree because somebody pressed a button in between. `PlaybackState` is
+ * the runtime's settled view; this is the raw measurement it is derived from,
+ * and keeping the two named apart keeps an adapter author from reaching for the
+ * wrong one.
+ */
+export interface AdapterReading {
   status: PlaybackStatus;
   positionMs?: number;
   durationMs?: number;
@@ -61,7 +69,7 @@ export interface Adapter {
   setVolume?(volume: number): Promise<void>;
 
   /** Required when `capabilities.endOfTrack` or `position` is `poll`. */
-  poll?(): Promise<AdapterState>;
+  poll?(): Promise<AdapterReading>;
   /** Required when `capabilities.endOfTrack` is `event`. */
   subscribe?(listener: (event: AdapterEvent) => void): () => void;
 

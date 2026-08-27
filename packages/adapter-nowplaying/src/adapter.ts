@@ -1,7 +1,7 @@
 import { defaultCapabilities } from 'upnext-core';
 import type {
   Adapter,
-  AdapterState,
+  AdapterReading,
   Binding,
   Capabilities,
   MediaRef,
@@ -135,7 +135,7 @@ export class NowPlayingAdapter implements Adapter {
     this.#binding = null;
   }
 
-  async poll(): Promise<AdapterState> {
+  async poll(): Promise<AdapterReading> {
     const reading = await this.#read();
 
     if (!reading) {

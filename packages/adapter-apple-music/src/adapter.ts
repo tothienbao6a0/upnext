@@ -1,7 +1,7 @@
 import { defaultCapabilities, similarity } from 'upnext-core';
 import type {
   Adapter,
-  AdapterState,
+  AdapterReading,
   Binding,
   Capabilities,
   MediaRef,
@@ -150,7 +150,7 @@ export class AppleMusicAdapter implements Adapter {
     await this.#run(volumeScript(volume));
   }
 
-  async poll(): Promise<AdapterState> {
+  async poll(): Promise<AdapterReading> {
     const reading = parseState(await this.#run(STATE_SCRIPT));
 
     // Not running, or nothing loaded. Either way there is nothing of ours here.

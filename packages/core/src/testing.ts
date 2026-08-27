@@ -2,7 +2,7 @@ import { defaultCapabilities } from './types/index.js';
 import type {
   Adapter,
   AdapterEvent,
-  AdapterState,
+  AdapterReading,
   Binding,
   Capabilities,
   MediaRef,
@@ -125,7 +125,7 @@ export class FakeAdapter implements Adapter {
     this.calls.push('volume');
   }
 
-  async poll(): Promise<AdapterState> {
+  async poll(): Promise<AdapterReading> {
     this.calls.push('poll');
     return {
       status: this.#status,
