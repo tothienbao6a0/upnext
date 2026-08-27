@@ -15,7 +15,7 @@
     "clean": "tsc --build --clean",
     "test": "npm run build && node --test packages/*/dist/test/*.test.js",
     "demo": "npm run build && node packages/demo/dist/src/cli.js",
-    "release": "npm run build && npm test && npm publish -w packages/core && npm publish -w packages/adapter-local && npm publish -w packages/adapter-process && npm publish -w packages/adapter-spotify && npm publish -w packages/adapter-browser && npm publish -w packages/adapter-nowplaying && npm publish -w packages/adapter-apple-music && npm publish -w packages/desktop && npm publish -w packages/mcp"
+    "release": "./publish.sh"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
