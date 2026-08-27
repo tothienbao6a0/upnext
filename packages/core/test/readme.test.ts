@@ -56,30 +56,40 @@ test('the README does not advertise a package that does not exist', () => {
 });
 
 test('nothing listed as unbuilt has actually been built', () => {
-  // The exact drift this file exists for: Apple Music and MCP shipped while the
-  // summary still called them unbuilt.
-  const sections = [...readme.matchAll(/\*\*Not built yet:\*\*([\s\S]*?)(?=\n##|\n---)/g)].map(
-    (m) => m[1]!,
-  );
-  assert.ok(sections.length > 0, 'expected a "Not built yet" section');
+  // The drift this exists for: Apple Music and MCP shipped while the summary
+  // still called them unbuilt.
+  //
+  // Only the *subject* of a claim counts, not every mention. A section may
+  // perfectly well say "Spotify and Apple Music are not gapless" — that is a
+  // limitation of something shipped, not a claim it is missing. Subjects are
+  // the comma list after "Not built yet:" and the bolded lead of each bullet.
+  const claimed: string[] = [];
+
+  for (const match of readme.matchAll(/\*\*Not built yet:\*\*([^.]*?)\./g)) {
+    claimed.push(...(match[1] ?? '').split(/,| and /));
+  }
+  const sections = [...readme.matchAll(/\*\*Not built yet:\*\*\n([\s\S]*?)(?=\n##|\n---)/g)];
+  for (const section of sections) {
+    for (const bullet of (section[1] ?? '').matchAll(/^- \*\*(.+?)\*\*/gm)) {
+      claimed.push(bullet[1] ?? '');
+    }
+  }
+
+  assert.ok(claimed.length > 0, 'expected some "Not built yet" claims to check');
 
   const shipped: Array<[string, RegExp]> = [
-    ['upnext-adapter-apple-music', /Apple Music/i],
+    ['upnext-adapter-apple-music', /apple music/i],
     ['upnext-mcp', /\bMCP\b/],
-    ['upnext-adapter-nowplaying', /Now Playing on macOS/i],
+    ['upnext-adapter-spotify', /^\s*spotify/i],
+    ['upnext-adapter-browser', /^\s*browser adapter/i],
   ];
 
-  for (const section of sections) {
+  for (const subject of claimed) {
     for (const [pkg, claim] of shipped) {
       if (!published().includes(pkg)) continue;
-      const match = claim.exec(section);
-      if (!match) continue;
-      // A mention is allowed when it is explaining what *is* there — the test
-      // is for a bare claim that the thing is missing.
-      const line = section.split('\n').find((l) => claim.test(l)) ?? '';
       assert.ok(
-        /already|ships now|both ship|is implemented|no extension needed/i.test(line),
-        `${pkg} is published but "Not built yet" still says: ${line.trim()}`,
+        !claim.test(subject.trim()),
+        `${pkg} ships, but "Not built yet" lists it as a subject: "${subject.trim()}"`,
       );
     }
   }
