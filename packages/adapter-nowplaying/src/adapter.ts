@@ -6,7 +6,7 @@ import type {
   Capabilities,
   MediaRef,
 } from 'upnext-core';
-import { isAvailable, readNowPlaying, sendTransport } from './mediaremote.js';
+import { sourceFor, UNSUPPORTED } from './source.js';
 import { hasEnded, readingUri, type NowPlayingReading } from './reading.js';
 
 /** The one thing this adapter can be asked for. */
@@ -70,9 +70,14 @@ export class NowPlayingAdapter implements Adapter {
 
   async init(): Promise<void> {
     if (this.#options.read) return; // Injected: nothing to probe.
-    if (!(await isAvailable())) {
+
+    const source = sourceFor();
+    if (!source) throw new Error(UNSUPPORTED);
+    if (!(await source.available())) {
       throw new Error(
-        'macOS Now Playing is unavailable here — this adapter needs macOS and the MediaRemote framework',
+        source.platform === 'linux'
+          ? 'playerctl was not found — install it to reach MPRIS on Linux'
+          : 'the MediaRemote framework did not answer here',
       );
     }
   }
@@ -153,10 +158,12 @@ export class NowPlayingAdapter implements Adapter {
   }
 
   #read(): Promise<NowPlayingReading | null> {
-    return (this.#options.read ?? readNowPlaying)();
+    if (this.#options.read) return this.#options.read();
+    return sourceFor()?.read() ?? Promise.resolve(null);
   }
 
   #send(command: 'play' | 'pause'): Promise<boolean> {
-    return (this.#options.send ?? sendTransport)(command);
+    if (this.#options.send) return this.#options.send(command);
+    return sourceFor()?.send(command) ?? Promise.resolve(false);
   }
 }
