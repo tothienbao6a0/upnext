@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod/v4';
 import type { Runtime } from 'upnext-core';
@@ -14,6 +15,21 @@ import { explainSetup, readNowPlaying, NOW_PLAYING_URI } from 'upnext-desktop';
  * Which is why this lives in its own package. A transport is an opinion, and
  * nobody importing `upnext-core` should inherit this one.
  */
+
+/**
+ * The server's own version, read rather than written down.
+ *
+ * It was written down, and stayed at 0.1.0 through two releases — which is
+ * the string MCP clients show beside the server name, so it was wrong
+ * everywhere it was visible and nowhere it was tested.
+ *
+ * Two levels up because this runs compiled, from dist/src/.
+ */
+const VERSION = (
+  JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
+    version: string;
+  }
+).version;
 
 /** What a tool hands back. Text, because that is what a model reads. */
 function say(text: string) {
@@ -65,7 +81,7 @@ function fmt(ms: number): string {
  * wired can expose *that* queue rather than a second one competing with it.
  */
 export function createServer(runtime: Runtime): McpServer {
-  const server = new McpServer({ name: 'upnext', version: '0.1.0' });
+  const server = new McpServer({ name: 'upnext', version: VERSION });
 
   server.registerTool(
     'media_now',
