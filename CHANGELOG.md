@@ -18,6 +18,9 @@ one core version is never paired with another.
 
 ### Added
 
+- **`upnext --version`** (also `-v`), read from `package.json` rather than
+  written down. The CLI had no way to say which version it was.
+
 - **`server.json`**, so `upnext-mcp` can be listed in the official MCP
   registry, and `mcpName` in the package — the registry verifies ownership by
   reading that field out of the published npm tarball and requiring it to match
