@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs';
 import { readNowPlaying, sendTransport } from 'upnext-adapter-nowplaying';
 import { desktop, explainSetup } from './index.js';
 
@@ -24,6 +25,19 @@ import { desktop, explainSetup } from './index.js';
  * one would be the kind of silent failure this project keeps refusing to ship.
  */
 
+/**
+ * Read rather than written down. The MCP server hardcoded its version and
+ * spent three releases introducing itself as 0.1.0, which is a mistake worth
+ * making once.
+ *
+ * Two levels up, because this runs compiled from dist/src/.
+ */
+const VERSION = (
+  JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
+    version: string;
+  }
+).version;
+
 const HELP = `upnext — one queue over every audio source
 
   Instant (act on whatever the machine is playing, then exit)
@@ -40,6 +54,7 @@ const HELP = `upnext — one queue over every audio source
 
   Options
     --library <dir>   index a folder so titles can find local files (repeatable)
+    --version         print the version and exit
 `;
 
 async function main(argv: string[]): Promise<number> {
@@ -56,6 +71,12 @@ async function main(argv: string[]): Promise<number> {
   const rest = args.slice(1);
 
   switch (command) {
+    case '-v':
+    case '--version':
+    case 'version':
+      process.stdout.write(`${VERSION}\n`);
+      return 0;
+
     case undefined:
     case '-h':
     case '--help':
