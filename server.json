@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.tothienbao6a0/upnext",
+  "description": "One audio queue across Spotify, the browser, local files and whatever is already playing.",
+  "repository": {
+    "url": "https://github.com/tothienbao6a0/upnext",
+    "source": "github",
+    "subfolder": "packages/mcp"
+  },
+  "websiteUrl": "https://github.com/tothienbao6a0/upnext#readme",
+  "version": "0.3.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "upnext-mcp",
+      "version": "0.3.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
