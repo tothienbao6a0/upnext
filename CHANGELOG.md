@@ -3,6 +3,28 @@
 Versions apply to all published packages together, so an adapter built against
 one core version is never paired with another.
 
+## 0.3.1
+
+### Fixed
+
+- **The MCP server introduced itself as `0.1.0`.** A hardcoded string, wrong
+  since 0.2.0, in the one field every MCP client displays beside the server
+  name. It reads its own `package.json` now.
+
+  Nothing caught it because every test called `createServer` and then asked the
+  object questions; none of them ever completed a handshake with it. There is
+  now a test that connects over a linked transport pair and asserts what a
+  client is actually told on `initialize` and `tools/list`.
+
+### Added
+
+- **`server.json`**, so `upnext-mcp` can be listed in the official MCP
+  registry, and `mcpName` in the package — the registry verifies ownership by
+  reading that field out of the published npm tarball and requiring it to match
+  the manifest. Both are checked against each other by a test, because the
+  registry only reports a mismatch at publish time, by which point the npm
+  release is already permanent.
+
 ## 0.3.0
 
 Nothing breaking. On macOS every one of these is a no-op.

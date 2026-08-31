@@ -1,6 +1,6 @@
 {
   "name": "upnext-adapter-apple-music",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Play Apple Music through the Music app on macOS — no credentials, and it can search your library by title.",
   "license": "Apache-2.0",
   "type": "module",
@@ -15,7 +15,7 @@
     "src"
   ],
   "dependencies": {
-    "upnext-core": "0.3.0"
+    "upnext-core": "0.3.1"
   },
   "engines": {
     "node": ">=20"

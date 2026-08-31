@@ -1,6 +1,6 @@
 {
   "name": "upnext-desktop",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Batteries-included upnext for a desktop: one call wires every source this machine can reach, plus a CLI.",
   "license": "Apache-2.0",
   "type": "module",
@@ -18,12 +18,12 @@
     "src"
   ],
   "dependencies": {
-    "upnext-core": "0.3.0",
-    "upnext-adapter-local": "0.3.0",
-    "upnext-adapter-spotify": "0.3.0",
-    "upnext-adapter-browser": "0.3.0",
-    "upnext-adapter-nowplaying": "0.3.0",
-    "upnext-adapter-apple-music": "0.3.0"
+    "upnext-core": "0.3.1",
+    "upnext-adapter-local": "0.3.1",
+    "upnext-adapter-spotify": "0.3.1",
+    "upnext-adapter-browser": "0.3.1",
+    "upnext-adapter-nowplaying": "0.3.1",
+    "upnext-adapter-apple-music": "0.3.1"
   },
   "engines": {
     "node": ">=20"

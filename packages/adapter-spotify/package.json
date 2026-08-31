@@ -1,6 +1,6 @@
 {
   "name": "upnext-adapter-spotify",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Play Spotify through the desktop app on macOS with no credentials, or through the Web API with a token your host already holds.",
   "license": "Apache-2.0",
   "type": "module",
@@ -15,7 +15,7 @@
     "src"
   ],
   "dependencies": {
-    "upnext-core": "0.3.0"
+    "upnext-core": "0.3.1"
   },
   "engines": {
     "node": ">=20"
@@ -38,6 +38,6 @@
     "upnext-adapter"
   ],
   "devDependencies": {
-    "upnext-adapter-local": "0.3.0"
+    "upnext-adapter-local": "0.3.1"
   }
 }
