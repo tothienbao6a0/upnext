@@ -19,7 +19,7 @@
     "src"
   ],
   "dependencies": {
-    "@modelcontextprotocol/server": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.4.0",
     "upnext-desktop": "0.3.1",
     "upnext-core": "0.3.1",
     "zod": "^4.4.3"
